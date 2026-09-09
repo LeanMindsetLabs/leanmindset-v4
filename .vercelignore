@@ -5,3 +5,5 @@ fastlane/report.xml
 playwright-report
 test-results
 *.pma
+docs
+legacy-web
