@@ -1,5 +1,4 @@
-import { router } from "expo-router";
-import { canJoinLab, comingSoonLabs, labCatalog, starterLab } from "@/src/content/labs";
+import { comingSoonLabs, labCatalog, openLab, starterLab } from "@/src/content/labs";
 import ScrollableScreen from "@/src/layout/ScrollableScreen";
 import LabHeroCard from "@/src/ui/LabHeroCard";
 import LabFlowHeader from "./LabFlowHeader";
@@ -15,7 +14,7 @@ export default function LabCatalogScreen() {
         pitch={starterLab.pitch}
         badge="Start here"
         badgeAccent
-        onPress={canJoinLab(starterLab) ? () => router.push("/labs/starter") : undefined}
+        onPress={() => openLab(starterLab.id)}
       />
       {comingSoonLabs.map((offer) => (
         <LabHeroCard
@@ -26,6 +25,7 @@ export default function LabCatalogScreen() {
           pitch={offer.pitch ?? offer.description}
           badge={offer.badge}
           compact
+          onPress={() => openLab(offer.id)}
         />
       ))}
     </ScrollableScreen>

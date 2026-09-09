@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import type { LabPhotoKey } from "@/src/lib/media";
 
 export type LabOffer = {
@@ -15,6 +16,24 @@ export type LabOffer = {
 /** Starter Lab is the only joinable offer. Paid labs stay priced and Coming Soon. */
 export function canJoinLab(offer: LabOffer) {
   return offer.id === "starter" && offer.available;
+}
+
+export function findLab(id: string): LabOffer | undefined {
+  if (id === starterLab.id) return starterLab;
+  return comingSoonLabs.find((lab) => lab.id === id);
+}
+
+export function labHref(id: string) {
+  return `/labs/${id}` as const;
+}
+
+/** Explicit dynamic route so Home (outside the labs stack) opens the lab, not the catalog. */
+export function labRoute(id: string) {
+  return { pathname: "/labs/[labId]" as const, params: { labId: id } };
+}
+
+export function openLab(id: string) {
+  router.push(labRoute(id), { withAnchor: true });
 }
 
 export const starterLab: LabOffer = {
@@ -52,6 +71,35 @@ export const comingSoonLabs: LabOffer[] = [
   },
 ];
 
+export const comingSoonDetail = {
+  body: "Coming soon",
+} as const;
+
+export const comingSoonLabDetails: Record<
+  string,
+  {
+    statement: string;
+    highlights: { icon: "calendar-outline" | "target" | "trending-up-outline"; title: string; detail: string }[];
+  }
+> = {
+  "lean-reset": {
+    statement: "A focused reset for stronger routines.",
+    highlights: [
+      { icon: "calendar-outline", title: "4 Weeks", detail: "Focused reset" },
+      { icon: "target", title: "Build Habits", detail: "That last" },
+      { icon: "trending-up-outline", title: "Guided", detail: "Coaching" },
+    ],
+  },
+  transformation: {
+    statement: "Deeper coaching and transformation.",
+    highlights: [
+      { icon: "calendar-outline", title: "8 Weeks", detail: "Full program" },
+      { icon: "target", title: "Build Habits", detail: "That last" },
+      { icon: "trending-up-outline", title: "Advanced", detail: "Coaching" },
+    ],
+  },
+};
+
 export const labCatalog = {
   eyebrow: "Choose your path",
   title: "Lean Labs",
@@ -63,6 +111,13 @@ export const labCatalog = {
 export const starterLabDetail = {
   eyebrow: "30 Days • Free",
   title: "Starter Lab",
+  badge: "Start here",
+  statement: "Build the foundation. Create momentum. Change your life.",
+  highlights: [
+    { icon: "calendar-outline" as const, title: "30 Days", detail: "Structured plan" },
+    { icon: "target" as const, title: "Build Habits", detail: "That last" },
+    { icon: "trending-up-outline" as const, title: "Beginner", detail: "Friendly" },
+  ],
   includedTitle: "Build your lean foundation",
   included: [
     "Daily nutrition plan",

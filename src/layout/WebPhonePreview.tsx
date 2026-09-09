@@ -17,6 +17,7 @@ export default function WebPhonePreview({ children }: { children: ReactNode }) {
   const { width, height } = useWindowDimensions();
   const pathname = usePathname();
   const isAdmin = pathname.startsWith("/admin");
+  const heroBleed = /^\/labs\/(starter|lean-reset|transformation)/.test(pathname);
 
   if (Platform.OS !== "web") return children;
 
@@ -30,17 +31,25 @@ export default function WebPhonePreview({ children }: { children: ReactNode }) {
     <View style={styles.stage}>
       <View style={[styles.slot, { width: IPHONE_15.width * scale, height: IPHONE_15.height * scale }]}>
         <View style={[styles.phone, { transform: [{ scale }] }]}>
-          <View style={styles.status}>
+          {heroBleed ? (
+            <View style={styles.body}>
+              {children}
+              <WebPhoneKeyboard />
+            </View>
+          ) : null}
+          <View style={[styles.status, heroBleed ? styles.statusOverlay : null]} pointerEvents="box-none">
             <Text style={styles.time}>9:41</Text>
             <View style={styles.island} pointerEvents="none" />
             <View style={styles.statusRight}>
               <PreviewToggles />
             </View>
           </View>
-          <View style={styles.body}>
-            {children}
-            <WebPhoneKeyboard />
-          </View>
+          {heroBleed ? null : (
+            <View style={styles.body}>
+              {children}
+              <WebPhoneKeyboard />
+            </View>
+          )}
           <View style={styles.homeIndicator} pointerEvents="none" />
         </View>
       </View>
@@ -89,6 +98,14 @@ const styles = StyleSheet.create({
     paddingLeft: 22,
     paddingRight: 10,
     zIndex: 2,
+  },
+  statusOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 8,
+    backgroundColor: "transparent",
   },
   statusRight: {
     minWidth: 168,

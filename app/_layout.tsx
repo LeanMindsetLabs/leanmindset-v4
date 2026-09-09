@@ -121,6 +121,9 @@ export default function RootLayout() {
 }
 
 function withWebTitle(children: ReactNode) {
+  if (Platform.OS !== "web") {
+    return <>{children}</>;
+  }
   return (
     <>
       <Head>

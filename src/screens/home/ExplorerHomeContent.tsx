@@ -1,6 +1,6 @@
 import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { comingSoonLabs, starterLab } from "@/src/content/labs";
+import { comingSoonLabs, openLab, starterLab } from "@/src/content/labs";
 import { useProfile } from "@/src/hooks/useProfile";
 import { defaultUser } from "@/src/services/profileService";
 import { homeContent } from "@/src/services/homeContent";
@@ -58,7 +58,7 @@ export default function ExplorerHomeContent() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel={copy.seeAll}
-            hitSlop={8}
+            hitSlop={12}
             onPress={() => router.push("/labs")}
             style={styles.seeAllHit}
           >
@@ -67,21 +67,30 @@ export default function ExplorerHomeContent() {
             </Text>
           </Pressable>
         </View>
-        <LabHeroCard
+          <LabHeroCard
           photo={starterLab.photo}
           title={starterLab.name}
           meta={starterLab.meta}
           pitch={starterLab.pitch}
           badge="Start here"
           badgeAccent
-          onPress={() => router.push("/labs/starter")}
+          compact
+          outlined
+          onPress={() => openLab(starterLab.id)}
         />
       </View>
 
       <View style={styles.block}>
-        <Text style={typography.caption} maxFontSizeMultiplier={1.3}>
-          {copy.moreLabel}
-        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={copy.moreLabel}
+          hitSlop={8}
+          onPress={() => router.push("/labs")}
+        >
+          <Text style={typography.caption} maxFontSizeMultiplier={1.3}>
+            {copy.moreLabel}
+          </Text>
+        </Pressable>
         {comingSoonLabs.map((offer) => (
           <LabHeroCard
             key={offer.id}
@@ -91,6 +100,7 @@ export default function ExplorerHomeContent() {
             pitch={offer.pitch ?? offer.description}
             badge={offer.badge}
             compact
+            onPress={() => openLab(offer.id)}
           />
         ))}
       </View>
@@ -126,11 +136,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    minHeight: layout.minTouchTarget / 2,
   },
   seeAllHit: {
-    minHeight: layout.minTouchTarget,
-    justifyContent: "center",
     paddingLeft: spacing.sm,
   },
   seeAll: {

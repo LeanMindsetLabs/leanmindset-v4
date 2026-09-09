@@ -7,7 +7,7 @@ export default function LabsLayout() {
     <RequireSession>
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }}>
         <Stack.Screen name="index" />
-        <Stack.Screen name="starter" />
+        <Stack.Screen name="[labId]" />
         <Stack.Screen name="join" />
         <Stack.Screen name="submitted" />
         <Stack.Screen name="prep" />

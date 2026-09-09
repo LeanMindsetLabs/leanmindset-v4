@@ -1,13 +1,16 @@
+import { usePathname } from "expo-router";
 import { useUiVariant } from "@/src/context/UiVariantContext";
 import { useLabMembership } from "@/src/hooks/useLabMembership";
 import { demoSetLifecycle } from "@/src/services/labMembershipService";
 import UiVariantToggle from "@/src/ui/UiVariantToggle";
 
 export default function PreviewToggles() {
+  const pathname = usePathname();
   const { previewRoute, checkInPicker, setCheckInPicker } = useUiVariant();
   const { membership } = useLabMembership();
 
   if (!__DEV__) return null;
+  if (pathname.startsWith("/labs/")) return null;
 
   if (previewRoute === "checkin") {
     return (

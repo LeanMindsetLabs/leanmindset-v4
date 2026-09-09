@@ -1,6 +1,6 @@
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { labPhotos, type LabPhotoKey } from "@/src/lib/media";
 import { colors } from "@/src/theme/colors";
 import { radius } from "@/src/theme/radius";
@@ -15,6 +15,7 @@ type LabHeroCardProps = {
   badge?: string;
   badgeAccent?: boolean;
   compact?: boolean;
+  outlined?: boolean;
   onPress?: () => void;
 };
 
@@ -26,6 +27,7 @@ export default function LabHeroCard({
   badge,
   badgeAccent,
   compact,
+  outlined,
   onPress,
 }: LabHeroCardProps) {
   return (
@@ -38,17 +40,25 @@ export default function LabHeroCard({
       style={({ pressed }) => [
         styles.card,
         compact ? styles.compact : null,
+        outlined ? styles.outlined : null,
         onPress && pressed ? styles.pressed : null,
       ]}
     >
-      <Image source={labPhotos[photo]} style={styles.photo} contentFit="cover" />
+      <Image
+        source={labPhotos[photo]}
+        pointerEvents="none"
+        style={[styles.photo, outlined && Platform.OS === "web" ? styles.photoMuted : null]}
+        contentFit="cover"
+      />
+      {outlined ? <View style={styles.photoDim} pointerEvents="none" /> : null}
       <LinearGradient
         colors={["rgba(15,17,18,0.08)", "rgba(15,17,18,0.22)", "rgba(15,17,18,0.82)"]}
         locations={[0, 0.42, 1]}
+        pointerEvents="none"
         style={StyleSheet.absoluteFill}
       />
       {badge ? (
-        <View style={[styles.badge, badgeAccent ? styles.badgeAccent : styles.badgeMuted]}>
+        <View style={[styles.badge, badgeAccent ? styles.badgeAccent : styles.badgeMuted]} pointerEvents="none">
           <Text
             style={[styles.badgeText, badgeAccent ? styles.badgeTextAccent : styles.badgeTextMuted]}
             maxFontSizeMultiplier={1.2}
@@ -57,7 +67,7 @@ export default function LabHeroCard({
           </Text>
         </View>
       ) : null}
-      <View style={styles.copy}>
+      <View style={styles.copy} pointerEvents="none">
         <Text style={styles.title} maxFontSizeMultiplier={1.3}>
           {title}
         </Text>
@@ -87,10 +97,21 @@ const styles = StyleSheet.create({
     aspectRatio: 1.85,
     minHeight: 132,
   },
+  outlined: {
+    borderWidth: 1.5,
+    borderColor: "rgba(61, 123, 255, 0.62)",
+  },
   photo: {
     ...StyleSheet.absoluteFill,
     width: "100%",
     height: "100%",
+  },
+  photoMuted: {
+    filter: "grayscale(0.18) saturate(0.78) brightness(0.84)",
+  },
+  photoDim: {
+    ...StyleSheet.absoluteFill,
+    backgroundColor: "rgba(8, 10, 14, 0.22)",
   },
   pressed: {
     opacity: 0.92,
