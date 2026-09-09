@@ -1,0 +1,47 @@
+LEANMINDSET V4 — MASTER IMPLEMENTATION PROMPT
+
+You are implementing LeanMindset V4 as a separate, local-only iteration.
+
+FIRST, STOP AND PROTECT V3
+1. Identify the current V3 root and current branch/workspace.
+2. Duplicate V3 into a separate V4 folder/branch/workspace with a clearly named V4 location.
+3. Verify V3 and V4 are distinct. Record both absolute paths and the git status/commit before editing.
+4. Make every code change only inside V4. V3 must remain untouched and rollback-safe.
+5. Do not deploy. Do not upload to Apple or TestFlight. Do not change production, release, signing, certificates, app-store metadata, live databases, or production configuration.
+
+SOURCE-OF-TRUTH ORDER
+A. Existing V3 code/assets are authoritative for every protected or unchanged component.
+B. LeanMindset_V4_UI_Handoff is authoritative for lifecycle states, copy, routes, and changed content regions.
+C. PNG screens communicate layout intent only. If a PNG differs from V3 chrome, retain V3 chrome.
+
+DO NOT TOUCH / DO NOT REDESIGN
+- Welcome Back/Login, OTP, password reset, and unchanged authentication screens.
+- The exact five-tab bottom navigation, icons, labels, sizing, spacing, safe-area behavior, active states, and routes. Never add a Labs tab.
+- Existing typography, black/grey visual system, blue primary accent, limited yellow accent, card system, buttons, backgrounds, spacing, radii, shadows, imagery, and loaders.
+- Existing screens/components unless the handoff explicitly identifies a changed state or content region.
+- Existing APIs, analytics, authentication, accessibility, and notifications except for the smallest additive changes required by an explicit V4 state.
+
+REUSE, DO NOT REBUILD
+Import and reuse V3 components/assets directly. Extend through props, composition, feature flags, and state-aware content. Do not trace screenshots, create lookalike icons, replace existing screen shells, or reconstruct protected components. Before modifying a protected shared component, stop and explain why composition cannot meet the requirement.
+
+IMPLEMENTATION ORDER
+1. Add a typed Lab lifecycle state: explorer, requested, approved_preparing, active, completed. Include start date, day, preparation tasks, daily tasks, check-in, and progress data.
+2. Add routes/screens exactly in the handoff inventory. Put long content in explicit detail screens. Never invent hidden below-fold content.
+3. Wire click paths exactly as documented. Back behavior returns to the originating overview and preserves state.
+4. Home changes only in its state-aware content region: one Lab CTA for Explorer; request status for Pending; countdown/progress for Preparation; today summary for Active; results summary for Completed.
+5. Meals: Explorer uses Meal Ideas; Active reuses the existing detailed V3 Meals screen with Lab data.
+6. Coach: preserve chat. Gate Daily Check-in until Active; expose it during Active; close it after completion while retaining history where supported.
+7. Train: change only as needed to display the Lab workout through existing V3 Train components. Explorer retains general workouts.
+8. Profile: add at most one My Lab membership/status row when needed. Do not put the Lab catalogue in Profile.
+9. Build Admin as a separate responsive web workflow, never inside the member mobile app.
+
+QUALITY GATES
+- Route/state tests cover all five lifecycle states.
+- Screenshot tests cover each changed/new screen and state.
+- Protected V3 screens/components pass visual regression; any unexplained visual change is a failure.
+- Verify accessibility labels, focus order, text scaling, contrast, Admin keyboard behavior, and loading/empty/error/offline states.
+- Verify every content item is visible or opens an explicit detail screen; no hidden-content assumptions.
+- Supply a change manifest listing reused V3 components, new V4 components, changed files, routes, state mapping, tests, and known gaps.
+- End with a local review build only. Do not deploy or publish.
+
+If any requested behavior conflicts with V3 architecture, pause and report the exact conflict plus the smallest additive option. A conflict is not permission to redesign.

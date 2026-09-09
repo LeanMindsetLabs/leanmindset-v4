@@ -18,13 +18,17 @@ const icons: Record<string, keyof typeof Ionicons.glyphMap> = {
 };
 
 const labels: Record<string, string> = {
-  index: "Home",
   today: "Today",
   meals: "Meals",
   checkin: "Check-in",
   coach: "Coach",
   train: "Train",
   profile: "Profile",
+};
+
+const a11yLabels: Record<string, string> = {
+  index: "Home",
+  ...labels,
 };
 
 const TAB_ICON_SIZE = 24;
@@ -55,6 +59,55 @@ function CoachBubbleIcon({ color, size = 26 }: { color: string; size?: number })
       <Circle cx="15" cy="12" r="1.15" fill={color} />
     </Svg>
   );
+}
+
+/** Web fallback: Ionicons is a font and can render empty until @font-face loads. */
+function TabSvgIcon({ routeName, color, size = TAB_ICON_SIZE }: { routeName: string; color: string; size?: number }) {
+  const stroke = { stroke: color, strokeWidth: 1.8, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+      {routeName === "meals" ? (
+        <>
+          <Path d="M7 3.5v6.2a2 2 0 0 0 4 0V3.5" {...stroke} />
+          <Path d="M9 3.5v17" {...stroke} />
+          <Path d="M16.5 3.5c0 3.2 2.4 3.6 2.4 7.2V20.5" {...stroke} />
+          <Path d="M16.5 3.5V20.5" {...stroke} />
+        </>
+      ) : null}
+      {routeName === "train" ? (
+        <>
+          <Path d="M3 10.2v3.6M21 10.2v3.6" {...stroke} />
+          <Path d="M6.2 8v8M17.8 8v8" {...stroke} />
+          <Path d="M6.2 12h11.6" {...stroke} />
+        </>
+      ) : null}
+      {routeName === "profile" ? (
+        <>
+          <Circle cx="12" cy="8" r="3.3" {...stroke} />
+          <Path d="M5.4 19.4c1.3-3.4 3.7-5.1 6.6-5.1s5.3 1.7 6.6 5.1" {...stroke} />
+        </>
+      ) : null}
+    </Svg>
+  );
+}
+
+function TabGlyph({
+  routeName,
+  color,
+  active,
+}: {
+  routeName: string;
+  color: string;
+  active: boolean;
+}) {
+  const iconName =
+    routeName === "profile" && active ? "person" : (icons[routeName] ?? "ellipse-outline");
+
+  if (Platform.OS === "web") {
+    return <TabSvgIcon routeName={routeName} color={color} />;
+  }
+
+  return <Ionicons name={iconName} size={TAB_ICON_SIZE} color={color} />;
 }
 
 type TabBarProps = {
@@ -120,7 +173,7 @@ export default function AppTabBar({ state, navigation }: TabBarProps) {
           <Pressable
             key={route.key}
             accessibilityRole="button"
-            accessibilityLabel={labels[route.name] ?? route.name}
+            accessibilityLabel={a11yLabels[route.name] ?? route.name}
             onPress={() =>
               route.name === "profile"
                 ? navigation.navigate("profile", { screen: "index" })
@@ -141,26 +194,15 @@ export default function AppTabBar({ state, navigation }: TabBarProps) {
             ) : isHome ? (
               <LeanMindsetIcon size={HOME_LOGO_SIZE} textScale={1.15} dimmed={!active} />
             ) : (
-              <Ionicons
-                name={
-                  route.name === "profile" && active
-                    ? "person"
-                    : (icons[route.name] ?? "ellipse-outline")
-                }
-                size={TAB_ICON_SIZE}
-                color={tabColor}
-              />
+              <TabGlyph routeName={route.name} color={tabColor} active={active} />
             )}
-            {!isHome ? (
+            {isHome ? null : (
               <View style={styles.labelWrap}>
-                <Text
-                  numberOfLines={1}
-                  style={[styles.label, active && styles.labelActive]}
-                >
+                <Text numberOfLines={1} style={[styles.label, active && styles.labelActive]}>
                   {labels[route.name] ?? route.name}
                 </Text>
               </View>
-            ) : null}
+            )}
           </Pressable>
         );
       })}

@@ -65,4 +65,13 @@ export const homeContent = {
     quote: "Don't aim for perfect. Aim for consistent.",
     support: "Small steps. Big change.",
   },
+  explorer: {
+    heading: "Find your Lean Lab",
+    labBody: "Personalized 30-day labs for nutrition, training, and the habits that last.",
+    recommendedLabel: "Recommended for you",
+    moreLabel: "More Labs",
+    seeAll: "See all",
+    viewLabs: "View Labs",
+    subgreeting: "Let's make it a great day.",
+  },
 } as const;

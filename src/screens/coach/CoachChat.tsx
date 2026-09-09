@@ -13,6 +13,7 @@ import AppTextInput from "@/src/ui/AppTextInput";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AppScreen from "@/src/layout/AppScreen";
 import { useKeyboardHeight } from "@/src/hooks/useKeyboardHeight";
+import { useLabMembership } from "@/src/hooks/useLabMembership";
 import { useUiVariant } from "@/src/context/UiVariantContext";
 import {
   createAssistantMessage,
@@ -31,6 +32,7 @@ import { spacing } from "@/src/theme/spacing";
 import AvatarBadge from "@/src/ui/AvatarBadge";
 import CheckInAskCard from "@/src/ui/CheckInAskCard";
 import InsightCard from "@/src/ui/InsightCard";
+import { canCheckIn } from "@/src/services/labMembershipService";
 
 const actionIcons: Record<string, keyof typeof Ionicons.glyphMap> = {
   utensils: "restaurant-outline",
@@ -52,6 +54,8 @@ const inputWeb = {
 
 export default function CoachChat() {
   const { setComposerOpen, pendingCoachMessage, setPendingCoachMessage } = useUiVariant();
+  const { membership } = useLabMembership();
+  const checkInEnabled = canCheckIn(membership.lifecycle);
   const insets = useSafeAreaInsets();
   const [messages, setMessages] = useState<CoachMessage[]>(getCoachThread);
   const [typing, setTyping] = useState(false);
@@ -193,7 +197,7 @@ export default function CoachChat() {
           <View style={styles.fixedAsk}>
             <Text style={styles.ask}>Ask your coach</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickRow}>
-              <CheckInAskCard />
+              {checkInEnabled ? <CheckInAskCard /> : null}
               {quickActions.map((action) => (
                 <Pressable
                   key={action.id}

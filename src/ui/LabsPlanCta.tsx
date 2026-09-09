@@ -1,22 +1,28 @@
-import { type ReactNode } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { router } from "expo-router";
 import { colors } from "@/src/theme/colors";
 import { radius } from "@/src/theme/radius";
 import { spacing } from "@/src/theme/spacing";
 import { typography } from "@/src/theme/typography";
+import BlueCta from "@/src/ui/BlueCta";
 
-type ProgressCardProps = {
+type Props = {
   title: string;
-  children: ReactNode;
+  body: string;
+  cta: string;
+  onPress?: () => void;
 };
 
-export default function ProgressCard({ title, children }: ProgressCardProps) {
+export default function LabsPlanCta({ title, body, cta, onPress }: Props) {
   return (
     <View style={styles.card}>
-      <Text style={typography.caption} maxFontSizeMultiplier={1.3}>
+      <Text style={typography.heading3} maxFontSizeMultiplier={1.3}>
         {title}
       </Text>
-      {children}
+      <Text style={typography.bodySmall} maxFontSizeMultiplier={1.4}>
+        {body}
+      </Text>
+      <BlueCta label={cta} onPress={onPress ?? (() => router.push("/labs"))} />
     </View>
   );
 }
@@ -26,6 +32,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
     padding: spacing.lg,
-    gap: spacing.md,
+    gap: spacing.xs,
   },
 });

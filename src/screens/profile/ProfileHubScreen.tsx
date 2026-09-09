@@ -1,9 +1,14 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
+import { router } from "expo-router";
 import ScrollableScreen from "@/src/layout/ScrollableScreen";
+import { useLabMembership } from "@/src/hooks/useLabMembership";
 import { useProfile } from "@/src/hooks/useProfile";
+import { myLabProfile } from "@/src/content/labs";
+import { labStatusLabel } from "@/src/services/labMembershipService";
 import { colors } from "@/src/theme/colors";
 import { layout } from "@/src/theme/layout";
+import BlueCta from "@/src/ui/BlueCta";
 import MetricRing from "@/src/ui/MetricRing";
 import ProfileIcon from "@/src/ui/profile/ProfileIcon";
 import ProfileNavHeader from "@/src/ui/profile/ProfileNavHeader";
@@ -69,6 +74,8 @@ export default function ProfileHubScreen() {
         </Pressable>
       </View>
 
+      <MyLabAccessCard />
+
       <View style={styles.stats}>
         <Stat kind="flame" value={String(profile.streakDays)} label="DAY STREAK" />
         <Stat kind="target" value={`${profile.consistencyPct}%`} label="CONSISTENCY" />
@@ -105,6 +112,39 @@ export default function ProfileHubScreen() {
         <ProfileIcon name="chevron" size={16} color={colors.white} strokeWidth={1.7} />
       </Pressable>
     </ScrollableScreen>
+  );
+}
+
+function MyLabAccessCard() {
+  const { membership } = useLabMembership();
+  const status = labStatusLabel(membership);
+  const inLab = membership.lifecycle !== "explorer";
+  const day = membership.progress?.day ?? membership.day;
+  const total = membership.progress?.totalDays ?? 30;
+  const meta = inLab
+    ? `${membership.labName ?? "Starter Lab"}${day != null ? ` · Day ${day} of ${total}` : ""}`
+    : "Not in a Lab yet";
+
+  return (
+    <View style={styles.labCard}>
+      <Text style={styles.labTitle}>{myLabProfile.title}</Text>
+      <Text style={styles.labMeta}>{meta}</Text>
+      <Text style={styles.labStatus}>{`Status: ${status}`}</Text>
+      <BlueCta
+        label={inLab ? myLabProfile.openCta : myLabProfile.exploreCta}
+        onPress={() => {
+          if (!inLab) {
+            router.push("/labs");
+            return;
+          }
+          if (membership.lifecycle === "completed") {
+            router.push("/labs/results");
+            return;
+          }
+          router.push("/(tabs)");
+        }}
+      />
+    </View>
   );
 }
 
@@ -176,6 +216,26 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 16,
+  },
+  labCard: {
+    backgroundColor: CARD,
+    borderRadius: 16,
+    padding: 16,
+    gap: 6,
+  },
+  labTitle: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  labMeta: {
+    color: LABEL,
+    fontSize: 13,
+  },
+  labStatus: {
+    color: PURPLE,
+    fontSize: 12,
+    fontWeight: "600",
   },
   avatarHit: {
     width: 104,

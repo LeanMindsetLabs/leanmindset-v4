@@ -1,5 +1,8 @@
-import { useEffect, useState } from "react";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { type ReactNode, useEffect, useState } from "react";
 import { DarkTheme, Stack, ThemeProvider, usePathname } from "expo-router";
+import Head from "expo-router/head";
+import * as Font from "expo-font";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { Platform, StyleSheet, View } from "react-native";
@@ -12,8 +15,8 @@ import WebPhonePreview from "@/src/layout/WebPhonePreview";
 import LogMenuHost from "@/src/ui/LogMenuHost";
 import AppBootScreen from "@/src/ui/AppBootScreen";
 import { rehydrateCoachThread } from "@/src/services/coachService";
+import { rehydrateLabMembership } from "@/src/services/labMembershipService";
 import { rehydrateProfile } from "@/src/services/profileService";
-import { rehydrateWeek } from "@/src/services/weekReviewService";
 import { installWebInputFocusReset } from "@/src/lib/webInputFocus";
 import { colors } from "@/src/theme/colors";
 
@@ -42,38 +45,45 @@ export default function RootLayout() {
   const isLegal = pathname.startsWith("/legal");
 
   useEffect(() => {
+    if (Platform.OS === "web") {
+      document.title = "LeanMindset";
+    }
     installWebInputFocusReset();
-    void hydrateStorage()
-      .then(() => {
+    void Promise.all([
+      Font.loadAsync({
+        ...Ionicons.font,
+        ...MaterialCommunityIcons.font,
+      }).catch(() => undefined),
+      hydrateStorage().then(() => {
         rehydrateProfile();
-        rehydrateWeek();
         rehydrateCoachThread();
-      })
-      .finally(() => {
-        setReady(true);
-        void SplashScreen.hideAsync();
-      });
+        rehydrateLabMembership();
+      }),
+    ]).finally(() => {
+      setReady(true);
+      void SplashScreen.hideAsync();
+    });
   }, []);
 
   if (isLegal) {
-    return (
+    return withWebTitle(
       <ThemeProvider value={navTheme}>
         <View style={styles.app}>
           <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: "#0F1112" } }}>
             <Stack.Screen name="legal" />
           </Stack>
         </View>
-      </ThemeProvider>
+      </ThemeProvider>,
     );
   }
 
   if (!ready) {
-    return (
+    return withWebTitle(
       <UiVariantProvider>
         <WebPhonePreview>
           <AppBootScreen />
         </WebPhonePreview>
-      </UiVariantProvider>
+      </UiVariantProvider>,
     );
   }
 
@@ -91,6 +101,8 @@ export default function RootLayout() {
               <Stack.Screen name="(tabs)" />
               <Stack.Screen name="onboarding" />
               <Stack.Screen name="workout" />
+              <Stack.Screen name="labs" />
+              <Stack.Screen name="admin" />
               <Stack.Screen name="legal" />
             </Stack>
             <LogMenuHost />
@@ -101,10 +113,21 @@ export default function RootLayout() {
     </SafeAreaProvider>
   );
 
-  return (
+  return withWebTitle(
     <UiVariantProvider>
       {isLegal ? app : <WebPhonePreview>{app}</WebPhonePreview>}
-    </UiVariantProvider>
+    </UiVariantProvider>,
+  );
+}
+
+function withWebTitle(children: ReactNode) {
+  return (
+    <>
+      <Head>
+        <title>LeanMindset</title>
+      </Head>
+      {children}
+    </>
   );
 }
 

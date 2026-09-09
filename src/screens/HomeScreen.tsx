@@ -2,20 +2,20 @@ import { Ionicons } from "@expo/vector-icons";
 import { type Href, router } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { homeContent as content } from "@/src/services/homeContent";
+import { useLabMembership } from "@/src/hooks/useLabMembership";
 import { useProfile } from "@/src/hooks/useProfile";
+import ActiveHomeContent from "@/src/screens/home/ActiveHomeContent";
+import CompletedHomeContent from "@/src/screens/home/CompletedHomeContent";
+import ExplorerHomeContent from "@/src/screens/home/ExplorerHomeContent";
+import PendingHomeContent from "@/src/screens/home/PendingHomeContent";
+import PrepHomeContent from "@/src/screens/home/PrepHomeContent";
 import { colors } from "@/src/theme/colors";
 import { layout } from "@/src/theme/layout";
-import BlueCta from "@/src/ui/BlueCta";
-import InsightCard from "@/src/ui/InsightCard";
-import HomeHeroChart from "@/src/ui/HomeHeroChart";
 import { LeanMindsetWordmark } from "@/src/ui/LeanMindsetBrand";
 
 export default function HomeScreen() {
   const { profile } = useProfile();
-  const firstName = profile.user.name.split(" ")[0] || "there";
-  const hour = new Date().getHours();
-  const hello = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const { membership } = useLabMembership();
 
   return (
     <SafeAreaView edges={["top"]} style={styles.screen}>
@@ -24,54 +24,25 @@ export default function HomeScreen() {
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        scrollEnabled={false}
       >
         <View style={styles.greetTop}>
-          <Pressable style={styles.iconBtn} accessibilityLabel="Notifications">
+          <Pressable
+            style={styles.iconBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Notifications"
+            accessibilityHint="Opens notification settings"
+            onPress={() => router.push("/(tabs)/profile/app-settings" as Href)}
+          >
             <Ionicons name="notifications-outline" size={22} color={colors.white} />
           </Pressable>
           <LeanMindsetWordmark size={20} style={styles.greetBrand} />
           <Avatar initial={profile.user.initial} />
         </View>
-        <Text style={styles.greetTitle}>{`${hello}, ${firstName}!`}</Text>
-        <Text style={styles.greetSub}>{content.whoopSubgreeting}</Text>
-
-        <HomeHeroChart />
-
-        <View style={styles.greetInsight}>
-          <InsightCard
-            title="Moderate day"
-            body="Ready is yellow. Keep protein high and finish Walk + Core A."
-            cta="View plan"
-            onPress={() => router.push("/(tabs)/train")}
-          />
-        </View>
-
-        <View style={styles.stack}>
-          <Text style={styles.stackTitle}>TODAY’S ACTIVITIES</Text>
-          <Pressable style={styles.activity} onPress={() => router.push("/(tabs)/meals")}>
-            <View style={[styles.mark, { backgroundColor: "#3d6aa8" }]}>
-              <Ionicons name="restaurant-outline" size={16} color="#fff" />
-              <Text style={styles.markText}>1/3</Text>
-            </View>
-            <View style={styles.flex}>
-              <Text style={styles.activityTitle}>BREAKFAST</Text>
-              <Text style={styles.activityMeta}>Logged · protein-focused</Text>
-            </View>
-          </Pressable>
-          <Pressable style={styles.activity} onPress={() => router.push("/(tabs)/train")}>
-            <View style={[styles.mark, { backgroundColor: "#3d7bff" }]}>
-              <Ionicons name="barbell-outline" size={16} color="#fff" />
-              <Text style={styles.markText}>8.4</Text>
-            </View>
-            <View style={styles.flex}>
-              <Text style={styles.activityTitle}>WALK + CORE A</Text>
-              <Text style={styles.activityMeta}>25 min · beginner</Text>
-            </View>
-          </Pressable>
-        </View>
-
-        <BlueCta label={content.continueLabel} onPress={() => router.push("/(tabs)/train")} />
+        {membership.lifecycle === "explorer" ? <ExplorerHomeContent /> : null}
+        {membership.lifecycle === "requested" ? <PendingHomeContent /> : null}
+        {membership.lifecycle === "approved_preparing" ? <PrepHomeContent /> : null}
+        {membership.lifecycle === "active" ? <ActiveHomeContent /> : null}
+        {membership.lifecycle === "completed" ? <CompletedHomeContent /> : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -99,7 +70,6 @@ const styles = StyleSheet.create({
   },
   scroll: { flex: 1 },
   scrollContent: { paddingHorizontal: 16, paddingTop: 8, paddingBottom: layout.tabBarContentInset },
-  flex: { flex: 1, minWidth: 0 },
   avatar: {
     width: 44, height: 44, borderRadius: 22, backgroundColor: "#2c2c2e",
     alignItems: "center", justifyContent: "center",
@@ -125,26 +95,4 @@ const styles = StyleSheet.create({
     flex: 1,
     textAlign: "center",
   },
-  greetTitle: {
-    fontSize: 24,
-    lineHeight: 30,
-    fontWeight: "700",
-    color: colors.white,
-    letterSpacing: -0.3,
-  },
-  greetSub: {
-    marginTop: 4,
-    marginBottom: 14,
-    fontSize: 14,
-    lineHeight: 20,
-    color: "#AEAEB2",
-  },
-  greetInsight: { marginBottom: 12 },
-  stack: { backgroundColor: "#222529", borderRadius: 16, padding: 12, marginBottom: 4 },
-  stackTitle: { fontSize: 11, letterSpacing: 1.6, color: "#8e8e93", marginBottom: 10, marginLeft: 4 },
-  activity: { flexDirection: "row", alignItems: "center", gap: 10, padding: 8, backgroundColor: "#2d3136", borderRadius: 12, marginBottom: 8 },
-  mark: { width: 52, height: 52, borderRadius: 10, alignItems: "center", justifyContent: "center", gap: 2 },
-  markText: { color: "#fff", fontSize: 11, fontWeight: "700" },
-  activityTitle: { color: colors.white, fontSize: 13, letterSpacing: 0.5, fontWeight: "700" },
-  activityMeta: { marginTop: 3, fontSize: 11, color: "#8e8e93" },
 });

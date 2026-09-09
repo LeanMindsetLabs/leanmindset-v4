@@ -1,5 +1,6 @@
 import { type ReactNode } from "react";
-import { Platform, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { Platform, Pressable, StyleSheet, Text, useWindowDimensions, View } from "react-native";
+import { router, usePathname, type Href } from "expo-router";
 import { colors } from "@/src/theme/colors";
 import PreviewToggles from "@/src/ui/PreviewToggles";
 import WebPhoneKeyboard from "@/src/ui/WebPhoneKeyboard";
@@ -14,6 +15,8 @@ export const IPHONE_15 = {
 
 export default function WebPhonePreview({ children }: { children: ReactNode }) {
   const { width, height } = useWindowDimensions();
+  const pathname = usePathname();
+  const isAdmin = pathname.startsWith("/admin");
 
   if (Platform.OS !== "web") return children;
 
@@ -41,7 +44,18 @@ export default function WebPhonePreview({ children }: { children: ReactNode }) {
           <View style={styles.homeIndicator} pointerEvents="none" />
         </View>
       </View>
-      <Text style={styles.caption}>iPhone 15 · 393 × 852 · review frame (web only)</Text>
+      {__DEV__ ? (
+        <Pressable
+          accessibilityRole="link"
+          onPress={() => (isAdmin ? router.replace("/(tabs)") : router.push("/admin" as Href))}
+        >
+          <Text style={styles.caption}>
+            {isAdmin ? "Back to app" : "iPhone 15 · 393 × 852 · Admin enrollments"}
+          </Text>
+        </Pressable>
+      ) : (
+        <Text style={styles.caption}>LeanMindset</Text>
+      )}
     </View>
   );
 }

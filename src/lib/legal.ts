@@ -1,6 +1,7 @@
-import { Linking, Platform } from "react-native";
-import * as WebBrowser from "expo-web-browser";
+import { router, type Href } from "expo-router";
+import { Platform } from "react-native";
 
+/** Shareable URL fallback until a V4 host is live. Native opens in-app legal routes. */
 export const LEGAL_SITE = "https://leanmindset-v3.vercel.app";
 
 export const legalSlugs = {
@@ -20,20 +21,11 @@ export function legalUrl(page: LegalPage) {
 }
 
 export async function openLegalPage(page: LegalPage) {
-  const url = legalUrl(page);
-  if (Platform.OS === "web") {
-    const opened = window.open(url, "_blank", "noopener,noreferrer");
-    if (!opened) window.location.assign(url);
+  if (Platform.OS !== "web") {
+    router.push(`/legal/${legalSlugs[page]}` as Href);
     return;
   }
-  try {
-    const supported = await Linking.canOpenURL(url);
-    if (supported) {
-      await Linking.openURL(url);
-      return;
-    }
-  } catch {
-    // Fall through to in-browser Safari/Chrome sheet if the system handler fails.
-  }
-  await WebBrowser.openBrowserAsync(url);
+  const url = legalUrl(page);
+  const opened = window.open(url, "_blank", "noopener,noreferrer");
+  if (!opened) window.location.assign(url);
 }

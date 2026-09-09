@@ -1,9 +1,13 @@
-import { View, StyleSheet } from "react-native";
 import { useUiVariant } from "@/src/context/UiVariantContext";
+import { useLabMembership } from "@/src/hooks/useLabMembership";
+import { demoSetLifecycle } from "@/src/services/labMembershipService";
 import UiVariantToggle from "@/src/ui/UiVariantToggle";
 
 export default function PreviewToggles() {
-  const { previewRoute, layoutVariant, setLayoutVariant, checkInPicker, setCheckInPicker } = useUiVariant();
+  const { previewRoute, checkInPicker, setCheckInPicker } = useUiVariant();
+  const { membership } = useLabMembership();
+
+  if (!__DEV__) return null;
 
   if (previewRoute === "checkin") {
     return (
@@ -21,26 +25,23 @@ export default function PreviewToggles() {
     );
   }
 
-  if (previewRoute === "meals" || previewRoute === "index" || previewRoute === "profile" || previewRoute === "login" || previewRoute === "workout" || previewRoute === "coach") {
-    return null;
-  }
-
-  return (
-    <View style={styles.stack}>
+  if (previewRoute === "index") {
+    return (
       <UiVariantToggle
         compact
-        label="Layout"
-        value={layoutVariant}
-        onChange={setLayoutVariant}
+        label="Lab"
+        value={membership.lifecycle}
+        onChange={demoSetLifecycle}
         options={[
-          { id: "classic", label: "Classic" },
-          { id: "whoop", label: "Whoop" },
+          { id: "explorer", label: "Explore" },
+          { id: "requested", label: "Wait" },
+          { id: "approved_preparing", label: "Prep" },
+          { id: "active", label: "Active" },
+          { id: "completed", label: "Done" },
         ]}
       />
-    </View>
-  );
-}
+    );
+  }
 
-const styles = StyleSheet.create({
-  stack: { alignItems: "flex-end", gap: 3 },
-});
+  return null;
+}

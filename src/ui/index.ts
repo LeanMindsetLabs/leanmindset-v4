@@ -6,6 +6,4 @@ export { default as ProgressBar } from "./ProgressBar";
 export { default as SectionHeader } from "./SectionHeader";
 export { default as MetricCard } from "./MetricCard";
 export { default as InsightCard } from "./InsightCard";
-export { default as HighlightNote } from "./HighlightNote";
 export { default as PlanCard } from "./PlanCard";
-export { default as ProgressCard } from "./ProgressCard";

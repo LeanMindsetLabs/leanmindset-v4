@@ -31,9 +31,10 @@ export default function WorkoutScreen() {
   }, [runtime.view]);
 
   useEffect(() => {
+    if (runtime.view !== "session") return;
     const timer = setInterval(() => tickTimer(), 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [runtime.view]);
 
   if (runtime.session.completed || !exercise) {
     return (

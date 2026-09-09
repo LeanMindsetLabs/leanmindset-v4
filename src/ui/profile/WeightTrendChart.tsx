@@ -22,11 +22,30 @@ export default function WeightTrendChart({ history, deltaLb, units }: WeightTren
   const padR = 6;
   const padT = 8;
   const padB = 8;
+  const gained = deltaLb > 0;
+
+  if (!history.length) {
+    return (
+      <View style={styles.card}>
+        <View style={styles.head}>
+          <View style={styles.col}>
+            <Text style={styles.title}>YOUR JOURNEY</Text>
+            <Text style={styles.sub}>Weight Trend</Text>
+          </View>
+        </View>
+        <Text style={styles.sub}>No weigh-ins yet</Text>
+      </View>
+    );
+  }
+
   const values = history.map((entry) => (units === "kg" ? lbToKg(entry.lb) : entry.lb));
-  const min = units === "kg" ? 64 : Math.min(...values);
-  const max = units === "kg" ? 72 : Math.max(...values);
+  const rawMin = values.length ? Math.min(...values) : 0;
+  const rawMax = values.length ? Math.max(...values) : 1;
+  const pad = Math.max((rawMax - rawMin) * 0.08, units === "kg" ? 0.5 : 1);
+  const min = rawMin - pad;
+  const max = rawMax + pad;
   const span = Math.max(max - min, 1);
-  const ticks = units === "kg" ? [72, 68, 64] : [max, min + span / 2, min];
+  const ticks = [max, min + span / 2, min];
   const innerW = Math.max(width - padL - padR, 1);
   const innerH = height - padT - padB;
   const plotted = values.map((value, index) => ({
@@ -39,7 +58,6 @@ export default function WeightTrendChart({ history, deltaLb, units }: WeightTren
   const area =
     last && first ? `${line} L ${last.x.toFixed(1)} ${padT + innerH} L ${first.x.toFixed(1)} ${padT + innerH} Z` : "";
   const xLabels = [history[0], history[Math.floor((history.length - 1) / 2)], history[history.length - 1]];
-  const gained = deltaLb > 0;
 
   return (
     <View style={styles.card}>
@@ -84,8 +102,8 @@ export default function WeightTrendChart({ history, deltaLb, units }: WeightTren
         ) : null}
       </View>
       <View style={styles.axis}>
-        {xLabels.map((entry) => (
-          <Text key={entry?.date} style={styles.xLabel}>
+        {xLabels.map((entry, index) => (
+          <Text key={`x-${index}-${entry?.date ?? "empty"}`} style={styles.xLabel}>
             {entry?.label.toUpperCase() ?? ""}
           </Text>
         ))}

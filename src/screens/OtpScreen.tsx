@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { completeOtpLogin, getProfile, getPendingEmail, verifyOtpCode } from "@/src/services/profileService";
@@ -21,6 +21,7 @@ export default function OtpScreen() {
   const firstTime = params.firstTime === "1";
   const [digits, setDigits] = useState<string[]>(["", "", "", "", "", ""]);
   const [secondsLeft, setSecondsLeft] = useState(RESEND_SECONDS);
+  const submitted = useRef(false);
 
   const code = useMemo(() => digits.join(""), [digits]);
   const activeIndex = digits.findIndex((digit) => digit === "");
@@ -32,7 +33,8 @@ export default function OtpScreen() {
   }, [secondsLeft]);
 
   useEffect(() => {
-    if (code.length !== 6 || !verifyOtpCode(code)) return;
+    if (submitted.current || code.length !== 6 || !verifyOtpCode(code)) return;
+    submitted.current = true;
     completeOtpLogin(email, { firstTime });
     const profile = getProfile();
     if (!profile.onboardingComplete) router.replace("/onboarding");

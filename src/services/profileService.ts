@@ -416,16 +416,20 @@ export function updateUser(patch: Partial<ProfileUser>) {
 
 export function updateWeight(lb: number) {
   const next = Math.round(lb * 10) / 10;
-  const start = profile.weightHistory[0]?.lb ?? next;
+  const now = new Date();
+  const date = now.toISOString().slice(0, 10);
+  const label = now.toLocaleString("en-US", { month: "short", day: "numeric" });
+  const weightHistory = [
+    ...profile.weightHistory.filter((entry) => entry.date !== date),
+    { date, label, lb: next },
+  ];
+  const start = weightHistory[0]?.lb ?? next;
   profile = {
     ...profile,
     weightLb: next,
     weightDeltaLb: Math.round((next - start) * 10) / 10,
     measurements: { ...profile.measurements, weight: next },
-    weightHistory: [
-      ...profile.weightHistory.filter((entry) => entry.date !== "2026-08-19"),
-      { date: "2026-08-19", label: "Aug 20", lb: next },
-    ],
+    weightHistory,
   };
   persistProfile(profile);
   notify();
