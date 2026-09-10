@@ -1,4 +1,5 @@
 import { appStorage } from "@/src/lib/storage";
+import { resetLabMembership } from "@/src/services/labMembershipService";
 
 export type WeightEntry = {
   date: string;
@@ -224,6 +225,84 @@ export const defaultProfile: ProfileState = {
   ],
 };
 
+export function isDemoUser(user?: Pick<ProfileUser, "id" | "email" | "name"> | null) {
+  if (!user) return false;
+  return user.id === defaultUser.id || user.email === defaultUser.email || user.name === defaultUser.name;
+}
+
+export function emptyUser(email = ""): ProfileUser {
+  const trimmed = email.trim();
+  return {
+    id: trimmed || "pending",
+    name: "",
+    email: trimmed,
+    initial: "",
+    online: true,
+    birthdayLabel: "",
+    gender: "",
+    heightCm: 170,
+    country: "",
+    memberSinceLabel: "",
+    leanLevel: 0,
+  };
+}
+
+export function emptyProfile(user: ProfileUser): ProfileState {
+  return {
+    user,
+    leanScore: 50,
+    leanStatus: "Getting started",
+    weightLb: 140,
+    weightDeltaLb: 0,
+    weightHistory: [],
+    measurements: { weight: 140, waist: 0, chest: 0, hips: 0 },
+    program: {
+      name: "LeanMindset",
+      day: 1,
+      totalDays: 42,
+      phase: "Explore",
+      upcoming: "",
+      schedule: defaultProfile.program.schedule,
+    },
+    appleHealthConnected: false,
+    preferences: { ...defaultProfile.preferences },
+    streakDays: 0,
+    consistencyPct: 0,
+    workoutsCount: 0,
+    goalLabel: "",
+    targetWeightKg: 0,
+    goalProgress: 0,
+    goalType: "lose",
+    activityLevel: "moderate",
+    workoutExperience: "new",
+    healthConditions: [],
+    kcalTarget: 0,
+    proteinTarget: 0,
+    onboardingComplete: false,
+    membership: {
+      planName: "",
+      interval: "",
+      status: "inactive",
+      memberSinceLabel: "",
+      nextBillingLabel: "",
+      last4: "",
+      brand: "",
+    },
+    achievements: defaultProfile.achievements.map((item) => ({ ...item, unlocked: false })),
+  };
+}
+
+function clearDemoIdentity() {
+  session = null;
+  profile = emptyProfile(emptyUser());
+  persistSession(null);
+  appStorage.removeItem(PROFILE_KEY);
+  appStorage.removeItem(HAS_ACCOUNT_KEY);
+  clearPendingEmail();
+  setFirstTimeFlow(false);
+  resetLabMembership();
+}
+
 const listeners = new Set<() => void>();
 
 function notify() {
@@ -251,29 +330,30 @@ function readJson<T>(key: string): T | null {
 export function rehydrateProfile() {
   profile = loadProfile();
   session = readJson<ProfileUser>(SESSION_KEY);
+  if (isDemoUser(session) || (session && isDemoUser(profile.user))) {
+    clearDemoIdentity();
+  }
   notify();
 }
 
 function mergeProfile(saved: Partial<ProfileState> | null): ProfileState {
-  if (!saved) return { ...defaultProfile, user: { ...defaultUser } };
+  const base = emptyProfile(emptyUser());
+  if (!saved || isDemoUser(saved.user)) return base;
   return {
-    ...defaultProfile,
+    ...base,
     ...saved,
-    user: { ...defaultUser, ...saved.user },
-    measurements: { ...defaultProfile.measurements, ...saved.measurements },
-    program: { ...defaultProfile.program, ...saved.program },
-    preferences: { ...defaultProfile.preferences, ...saved.preferences },
-    membership: { ...defaultProfile.membership, ...saved.membership },
-    healthConditions: saved.healthConditions ?? defaultProfile.healthConditions,
-    weightHistory: saved.weightHistory?.length ? saved.weightHistory : defaultProfile.weightHistory,
-    weightLb: saved.weightLb ?? defaultProfile.weightLb,
-    weightDeltaLb: saved.weightDeltaLb ?? defaultProfile.weightDeltaLb,
+    user: { ...base.user, ...saved.user },
+    measurements: { ...base.measurements, ...saved.measurements },
+    program: { ...base.program, ...saved.program },
+    preferences: { ...base.preferences, ...saved.preferences },
+    membership: { ...base.membership, ...saved.membership },
+    healthConditions: saved.healthConditions ?? base.healthConditions,
+    weightHistory: saved.weightHistory ?? base.weightHistory,
     achievements:
       saved.achievements?.length &&
-      saved.achievements.every((item) => "tone" in item && "mark" in item && "caption" in item) &&
-      saved.achievements.some((item) => item.mark === "1 MO")
+      saved.achievements.every((item) => "tone" in item && "mark" in item && "caption" in item)
         ? saved.achievements
-        : defaultProfile.achievements,
+        : base.achievements,
   };
 }
 
@@ -319,18 +399,8 @@ function markHasAccount() {
 }
 
 function buildUserFromEmail(email: string): ProfileUser {
-  const trimmed = email.trim() || defaultUser.email;
-  const local = trimmed.split("@")[0] ?? "User";
-  const name =
-    trimmed === defaultUser.email
-      ? defaultUser.name
-      : local.replace(/[._-]+/g, " ").replace(/\b\w/g, (char) => char.toUpperCase());
-  return {
-    ...defaultUser,
-    email: trimmed,
-    name,
-    initial: (name[0] || "M").toUpperCase(),
-  };
+  const trimmed = email.trim();
+  return emptyUser(trimmed);
 }
 
 export function getProfile() {
@@ -361,22 +431,16 @@ export function completeOtpLogin(email: string, options?: { firstTime?: boolean 
   markHasAccount();
   clearPendingEmail();
 
-  if (options?.firstTime) {
-    profile = {
-      ...defaultProfile,
-      user,
-      onboardingComplete: false,
-      goalProgress: 0,
-      streakDays: 0,
-      consistencyPct: 0,
-      workoutsCount: 0,
-      leanScore: 50,
-      leanStatus: "Getting started",
-    };
+  const saved = readJson<ProfileState>(PROFILE_KEY);
+  const sameUser = Boolean(saved?.user?.email && saved.user.email.toLowerCase() === user.email.toLowerCase());
+  const canResume = sameUser && saved?.onboardingComplete && !isDemoUser(saved.user);
+
+  if (options?.firstTime || !canResume) {
+    profile = emptyProfile(user);
+    resetLabMembership();
   } else {
-    const saved = readJson<ProfileState>(PROFILE_KEY);
-    profile = saved ? mergeProfile(saved) : { ...defaultProfile, user };
-    profile = { ...profile, user: { ...profile.user, email: user.email, name: user.name, initial: user.initial } };
+    profile = mergeProfile(saved);
+    profile = { ...profile, user: { ...profile.user, email: user.email } };
   }
 
   setFirstTimeFlow(false);
@@ -394,11 +458,12 @@ export function login(email: string) {
 
 export function logout() {
   session = null;
-  profile = { ...defaultProfile, user: { ...defaultUser } };
+  profile = emptyProfile(emptyUser());
   persistSession(null);
   appStorage.removeItem(PROFILE_KEY);
   clearPendingEmail();
   setFirstTimeFlow(false);
+  resetLabMembership();
   notify();
 }
 

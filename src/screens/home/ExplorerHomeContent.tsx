@@ -2,7 +2,6 @@ import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { comingSoonLabs, openLab, starterLab } from "@/src/content/labs";
 import { useProfile } from "@/src/hooks/useProfile";
-import { defaultUser } from "@/src/services/profileService";
 import { homeContent } from "@/src/services/homeContent";
 import { colors } from "@/src/theme/colors";
 import { layout } from "@/src/theme/layout";
@@ -17,7 +16,7 @@ const copy = homeContent.explorer;
 function firstName(name: string) {
   const source = name.includes("@") ? name.slice(0, name.indexOf("@")) : name;
   const first = source.trim().split(/\s+/)[0] || "";
-  if (!first) return defaultUser.name.split(" ")[0] || "there";
+  if (!first) return "there";
   return first;
 }
 

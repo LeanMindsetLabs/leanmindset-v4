@@ -20,7 +20,7 @@ export default function EmailLoginScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ firstTime?: string }>();
   const firstTime = params.firstTime === "1";
-  const [email, setEmail] = useState("youremail@example.com");
+  const [email, setEmail] = useState("");
   const [focused, setFocused] = useState(false);
 
   function submit() {
@@ -36,7 +36,9 @@ export default function EmailLoginScreen() {
 
       <View style={[styles.shell, { paddingTop: Math.max(insets.top, 12) }]}>
         <View style={styles.nav}>
-          <View style={styles.navSide} />
+          <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back" style={styles.navSide}>
+            <Ionicons name="chevron-back" size={22} color={colors.white} />
+          </Pressable>
           <Pressable accessibilityRole="button" style={styles.helpBtn}>
             <Text style={styles.helpText}>Help (?)</Text>
           </Pressable>
@@ -44,8 +46,10 @@ export default function EmailLoginScreen() {
 
         <View style={styles.center}>
           <AuthBrandHeader />
-          <Text style={styles.title}>Welcome back</Text>
-          <Text style={styles.subtitle}>Log in to continue your lean journey.</Text>
+          <Text style={styles.title}>{firstTime ? "Create your account" : "Welcome back"}</Text>
+          <Text style={styles.subtitle}>
+            {firstTime ? "Enter your email to get started." : "Log in to continue your lean journey."}
+          </Text>
 
           <View style={styles.fieldBlock}>
             <Text style={styles.label}>Email address</Text>
@@ -67,7 +71,7 @@ export default function EmailLoginScreen() {
           </View>
 
           <Pressable onPress={submit} accessibilityRole="button" style={({ pressed }) => [styles.cta, pressed && styles.pressed]}>
-            <Text style={styles.ctaLabel}>Log in</Text>
+            <Text style={styles.ctaLabel}>{firstTime ? "Continue" : "Log in"}</Text>
             <Ionicons name="arrow-forward" size={16} color={colors.white} />
           </Pressable>
 
@@ -101,11 +105,15 @@ const styles = StyleSheet.create({
   nav: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "flex-end",
+    justifyContent: "space-between",
     paddingHorizontal: 22,
     minHeight: layout.minTouchTarget,
   },
-  navSide: { width: 44 },
+  navSide: {
+    width: 44,
+    minHeight: layout.minTouchTarget,
+    justifyContent: "center",
+  },
   helpBtn: { minHeight: layout.minTouchTarget, justifyContent: "center" },
   helpText: { fontSize: 14, color: colors.textSecondary, fontWeight: "500" },
   center: {
@@ -151,7 +159,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 15,
     lineHeight: 20,
-    color: colors.textSecondary,
+    color: colors.white,
     paddingVertical: 0,
     marginVertical: 0,
     textAlignVertical: "center",

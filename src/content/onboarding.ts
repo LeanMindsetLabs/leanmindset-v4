@@ -69,4 +69,4 @@ export const HEALTH_CONDITIONS = [
   "Other",
 ];
 
-export const ONBOARDING_STEPS = 6;
+export const ONBOARDING_STEPS = 7;

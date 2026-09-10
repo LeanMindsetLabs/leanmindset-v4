@@ -42,8 +42,15 @@ export default function WelcomeScreen() {
 
         <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 8) + ONBOARDING_FOOTER_LIFT }]}>
           <Pressable onPress={start} accessibilityRole="button" style={({ pressed }) => [styles.cta, pressed && styles.pressed]}>
-            <Text style={styles.ctaLabel}>Start your program</Text>
+            <Text style={styles.ctaLabel}>Create account</Text>
             <Ionicons name="arrow-forward" size={16} color={colors.white} />
+          </Pressable>
+          <Pressable
+            onPress={() => router.push("/login")}
+            accessibilityRole="button"
+            style={({ pressed }) => [styles.loginLink, pressed && styles.pressed]}
+          >
+            <Text style={styles.loginLinkText}>I already have an account</Text>
           </Pressable>
           <AuthLegalFooter />
         </View>
@@ -101,4 +108,10 @@ const styles = StyleSheet.create({
   },
   pressed: { opacity: 0.9 },
   ctaLabel: { fontSize: 16, fontWeight: "700", color: colors.white },
+  loginLink: {
+    minHeight: layout.minTouchTarget,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loginLinkText: { fontSize: 14, fontWeight: "600", color: colors.white },
 });

@@ -24,7 +24,9 @@ import {
   type WorkoutExperience,
 } from "@/src/services/profileService";
 import { colors } from "@/src/theme/colors";
+import { radius } from "@/src/theme/radius";
 import { spacing } from "@/src/theme/spacing";
+import AppTextInput from "@/src/ui/AppTextInput";
 import OnboardingBasicsModal, { type BasicsModal } from "@/src/ui/onboarding/OnboardingBasicsModal";
 import {
   BasicsRow,
@@ -39,17 +41,18 @@ import {
 } from "@/src/ui/onboarding/OnboardingChrome";
 import WeightScale from "@/src/ui/onboarding/WeightScale";
 
-const STEPS = ["goal", "target", "activity", "experience", "health", "basics", "complete"] as const;
+const STEPS = ["name", "goal", "target", "activity", "experience", "health", "basics", "complete"] as const;
 type StepId = (typeof STEPS)[number];
 
 const COPY: Record<StepId, { title: string; subtitle: string }> = {
+  name: { title: "What should we call you?", subtitle: "This is how LeanMindset will greet you." },
   goal: { title: "What's your primary goal?", subtitle: "This helps us personalize your plan." },
   target: { title: "What's your target weight?", subtitle: "A number you can live with — not a crash." },
   activity: { title: "How active are you?", subtitle: "This sets your daily energy budget." },
   experience: { title: "What's your training background?", subtitle: "We'll match volume to where you are." },
   health: { title: "Any conditions we should know?", subtitle: "This keeps recommendations safer. Select all that apply." },
   basics: { title: "Your basics", subtitle: "These help us fine-tune your plan." },
-  complete: { title: "You're all set!", subtitle: "Your personalized 6-week lab is ready to begin." },
+  complete: { title: "You're all set!", subtitle: "Your LeanMindset home is ready. You can browse labs anytime — no need to join one yet." },
 };
 
 export default function OnboardingScreen() {
@@ -66,6 +69,7 @@ export default function OnboardingScreen() {
   const [activity, setActivity] = useState<ActivityLevel>(profile.activityLevel ?? "moderate");
   const [experience, setExperience] = useState<WorkoutExperience>(profile.workoutExperience ?? "returning");
   const [conditions, setConditions] = useState<string[]>([]);
+  const [displayName, setDisplayName] = useState(profile.user.name);
   const [modal, setModal] = useState<BasicsModal>(null);
 
   const stepId = STEPS[Math.min(step, STEPS.length - 1)];
@@ -92,7 +96,7 @@ export default function OnboardingScreen() {
 
   function finish() {
     completeOnboarding({
-      name: profile.user.name,
+      name: displayName.trim(),
       gender,
       birthdayLabel: `Jan 1, ${new Date().getFullYear() - age}`,
       heightCm,
@@ -130,7 +134,7 @@ export default function OnboardingScreen() {
             index={progressIndex}
             total={ONBOARDING_STEPS}
             onBack={step > 0 ? () => go(step - 1) : () => router.replace("/welcome")}
-            onSkip={stepId === "basics" ? undefined : () => go(step + 1)}
+            onSkip={stepId === "name" || stepId === "basics" ? undefined : () => go(step + 1)}
           />
         ) : (
           <View style={styles.completeHead}>
@@ -145,8 +149,8 @@ export default function OnboardingScreen() {
         </ScrollView>
 
         <NextBar
-          label={stepId === "complete" ? "Build my program" : "Next"}
-          disabled={stepId === "health" && conditions.length === 0}
+          label={stepId === "complete" ? "Go to Home" : "Next"}
+          disabled={(stepId === "name" && displayName.trim().length < 2) || (stepId === "health" && conditions.length === 0)}
           onPress={stepId === "complete" ? finish : () => go(step + 1)}
           extra={
             stepId === "health" ? (
@@ -189,6 +193,23 @@ export default function OnboardingScreen() {
   );
 
   function renderStep() {
+    if (stepId === "name") {
+      return (
+        <View style={styles.nameBlock}>
+          <Text style={styles.nameLabel}>Your name</Text>
+          <AppTextInput
+            value={displayName}
+            onChangeText={setDisplayName}
+            placeholder="Sakai"
+            placeholderTextColor={colors.textSecondary}
+            autoCapitalize="words"
+            autoCorrect={false}
+            style={styles.nameInput}
+          />
+        </View>
+      );
+    }
+
     if (stepId === "goal") {
       return (
         <View style={styles.goalGrid}>
@@ -288,6 +309,18 @@ const styles = StyleSheet.create({
     textAlign: "center",
     paddingHorizontal: spacing.lg,
     marginBottom: spacing.md,
+  },
+  nameBlock: { gap: 8, paddingTop: 8 },
+  nameLabel: { fontSize: 13, color: colors.white, fontWeight: "500" },
+  nameInput: {
+    minHeight: 52,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: "rgba(255,255,255,0.16)",
+    backgroundColor: "rgba(10,12,14,0.72)",
+    paddingHorizontal: 14,
+    fontSize: 16,
+    color: colors.white,
   },
   profileLink: {
     fontSize: 13,
