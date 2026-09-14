@@ -1,20 +1,17 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
-import { Keyboard, Platform, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Keyboard, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import AppTextInput from "@/src/ui/AppTextInput";
-import { CheckInInputAccessory, CHECKIN_INPUT_ACCESSORY } from "@/src/ui/CheckInInputAccessory";
 import { useUiVariant } from "@/src/context/UiVariantContext";
 import AppScreen from "@/src/layout/AppScreen";
 import { useKeyboardHeight } from "@/src/hooks/useKeyboardHeight";
+import { isoDate } from "@/src/lib/cohortStart";
 import { formatCheckInMessage } from "@/src/services/coachService";
 import { completeDailyTask } from "@/src/services/labMembershipService";
 import { getProfile } from "@/src/services/profileService";
 import { colors } from "@/src/theme/colors";
 import { layout } from "@/src/theme/layout";
-
-const YESTERDAY_LB = 178.9;
-const START_LB = 191.4;
 const MOODS = ["Rough", "Normal", "Good", "Great"] as const;
 const MOOD_META: Record<(typeof MOODS)[number], { emoji: string; hint: string }> = {
   Rough: { emoji: "😣", hint: "Tough day" },
@@ -35,7 +32,12 @@ export default function DailyCheckIn() {
   const list = checkInPicker === "1";
   const cards = checkInPicker === "2";
   const keyboardHeight = useKeyboardHeight();
-  const program = getProfile().program;
+  const profile = getProfile();
+  const program = profile.program;
+  const lastWeight = lastLoggedWeight(profile);
+  const lastWeightLb = lastWeight.lb;
+  const lastWeightIsPriorDay = lastWeight.fromPriorDay;
+  const startWeightLb = profile.weightHistory[0]?.lb ?? profile.weightLb;
   const [step, setStep] = useState<Step>(0);
   const [weightText, setWeightText] = useState("");
   const [mood, setMood] = useState<Mood | "">("");
@@ -48,8 +50,8 @@ export default function DailyCheckIn() {
     const n = Number.parseFloat(weightText);
     return Number.isFinite(n) ? n : null;
   }, [weightText]);
-  const lostToday = weight == null ? null : +(YESTERDAY_LB - weight).toFixed(1);
-  const lostTotal = weight == null ? null : +(START_LB - weight).toFixed(1);
+  const lostToday = weight == null ? null : +(lastWeightLb - weight).toFixed(1);
+  const lostTotal = weight == null ? null : +(startWeightLb - weight).toFixed(1);
 
   const summary = useMemo(() => {
     if (weight == null || !mood || !waterL || !exerciseMin || !bm) return "";
@@ -84,7 +86,7 @@ export default function DailyCheckIn() {
   }
 
   function nudgeWeight(delta: number) {
-    const base = weight ?? YESTERDAY_LB;
+    const base = weight ?? lastWeightLb;
     setWeightText((base + delta).toFixed(1));
   }
 
@@ -103,13 +105,6 @@ export default function DailyCheckIn() {
 
   return (
     <AppScreen edges={["top"]}>
-      {step === 0 || step === 5 ? (
-        <CheckInInputAccessory
-          label={step === 0 ? "Continue" : notes.trim() ? "Continue" : "Skip"}
-          disabled={step === 0 && weight == null}
-          onPress={next}
-        />
-      ) : null}
       <View style={[styles.page, { paddingBottom: keyboardHeight }]}>
         <View style={styles.head}>
           <View style={styles.headRow}>
@@ -143,18 +138,17 @@ export default function DailyCheckIn() {
           {step === 0 ? (
             list ? (
               <View style={styles.block}>
-                <Text style={styles.hint}>Yesterday {YESTERDAY_LB.toFixed(1)} lb</Text>
+                <Text style={styles.hint}>{sameWeightHint(lastWeightLb, lastWeightIsPriorDay)}</Text>
                 <View style={styles.weightBox}>
                   <AppTextInput
                     value={weightText}
                     onChangeText={setWeightText}
                     keyboardType="decimal-pad"
-                    placeholder="0.0"
+                    placeholder={lastWeightLb.toFixed(1)}
                     placeholderTextColor="#6E7D92"
                     style={styles.weightInput}
                     accessibilityLabel="Today's weight in pounds"
                     returnKeyType="done"
-                    inputAccessoryViewID={Platform.OS === "ios" ? CHECKIN_INPUT_ACCESSORY : undefined}
                     onSubmitEditing={() => {
                       if (weight != null) next();
                     }}
@@ -166,9 +160,11 @@ export default function DailyCheckIn() {
               <WeightStepper
                 compact={checkInPicker === "3"}
                 value={weightText}
+                lastWeightLb={lastWeightLb}
+                lastWeightIsPriorDay={lastWeightIsPriorDay}
                 onChangeText={setWeightText}
                 onNudge={nudgeWeight}
-                onSameAsYesterday={() => setWeightText(YESTERDAY_LB.toFixed(1))}
+                onReuseLast={() => setWeightText(lastWeightLb.toFixed(1))}
                 onSubmit={() => {
                   if (weight != null) next();
                 }}
@@ -266,7 +262,6 @@ export default function DailyCheckIn() {
               multiline
               returnKeyType="done"
               blurOnSubmit
-              inputAccessoryViewID={Platform.OS === "ios" ? CHECKIN_INPUT_ACCESSORY : undefined}
               onSubmitEditing={next}
             />
           ) : null}
@@ -276,6 +271,9 @@ export default function DailyCheckIn() {
               day={program.day}
               labName={program.name}
               weight={weight}
+              startWeightLb={startWeightLb}
+              lastWeightLb={lastWeightLb}
+              lastWeightIsPriorDay={lastWeightIsPriorDay}
               lostToday={lostToday ?? 0}
               lostTotal={lostTotal ?? 0}
               mood={mood}
@@ -353,19 +351,36 @@ function deltaCopy(lost: number) {
   return `↑ ${trimNum(Math.abs(lost))} lb`;
 }
 
+function lastLoggedWeight(profile: { weightLb: number; weightHistory: { date: string; lb: number }[] }) {
+  const today = isoDate();
+  const prior = [...profile.weightHistory].reverse().find((entry) => entry.date !== today && entry.lb > 0);
+  if (prior) return { lb: prior.lb, fromPriorDay: true };
+  return { lb: profile.weightLb, fromPriorDay: false };
+}
+
+function sameWeightHint(lb: number, fromPriorDay: boolean) {
+  return fromPriorDay
+    ? `Same as yesterday · ${lb.toFixed(1)} lb`
+    : `Same as your starting weight · ${lb.toFixed(1)} lb`;
+}
+
 function WeightStepper({
   compact,
   value,
+  lastWeightLb,
+  lastWeightIsPriorDay,
   onChangeText,
   onNudge,
-  onSameAsYesterday,
+  onReuseLast,
   onSubmit,
 }: {
   compact?: boolean;
   value: string;
+  lastWeightLb: number;
+  lastWeightIsPriorDay: boolean;
   onChangeText: (next: string) => void;
   onNudge: (delta: number) => void;
-  onSameAsYesterday: () => void;
+  onReuseLast: () => void;
   onSubmit?: () => void;
 }) {
   return (
@@ -379,12 +394,11 @@ function WeightStepper({
             value={value}
             onChangeText={onChangeText}
             keyboardType="decimal-pad"
-            placeholder={YESTERDAY_LB.toFixed(1)}
+            placeholder={lastWeightLb.toFixed(1)}
             placeholderTextColor="#6E7D92"
             style={[styles.stepperInput, compact && styles.stepperInputSlim]}
             accessibilityLabel="Today's weight in pounds"
             returnKeyType="done"
-            inputAccessoryViewID={Platform.OS === "ios" ? CHECKIN_INPUT_ACCESSORY : undefined}
             onSubmitEditing={onSubmit}
           />
           <Text style={styles.lb}>lb</Text>
@@ -393,8 +407,8 @@ function WeightStepper({
           <Text style={styles.stepperBtnText}>+</Text>
         </Pressable>
       </View>
-      <Pressable onPress={onSameAsYesterday}>
-        <Text style={styles.sameBtnText}>Same as yesterday · {YESTERDAY_LB.toFixed(1)} lb</Text>
+      <Pressable onPress={onReuseLast}>
+        <Text style={styles.sameBtnText}>{sameWeightHint(lastWeightLb, lastWeightIsPriorDay)}</Text>
       </Pressable>
     </View>
   );
@@ -530,6 +544,9 @@ function ReviewSnapshot({
   day,
   labName,
   weight,
+  startWeightLb,
+  lastWeightLb,
+  lastWeightIsPriorDay,
   lostToday,
   lostTotal,
   mood,
@@ -541,6 +558,9 @@ function ReviewSnapshot({
   day: number;
   labName: string;
   weight: number;
+  startWeightLb: number;
+  lastWeightLb: number;
+  lastWeightIsPriorDay: boolean;
   lostToday: number;
   lostTotal: number;
   mood: Mood;
@@ -555,8 +575,8 @@ function ReviewSnapshot({
         {day}_{labName}
       </Text>
       <View style={styles.reviewBlock}>
-        <ReviewRow label="Start" value={`${trimNum(START_LB)} lb`} />
-        <ReviewRow label="Yesterday" value={`${trimNum(YESTERDAY_LB)} lb`} />
+        <ReviewRow label="Start" value={`${trimNum(startWeightLb)} lb`} />
+        <ReviewRow label={lastWeightIsPriorDay ? "Yesterday" : "Starting"} value={`${trimNum(lastWeightLb)} lb`} />
         <ReviewRow label="Today" value={`${trimNum(weight)} lb`} accent />
         <ReviewRow label="Vs yesterday" value={deltaCopy(lostToday)} tone={lostToday >= 0 ? "down" : "up"} />
         <ReviewRow label="Vs start" value={deltaCopy(lostTotal)} tone={lostTotal >= 0 ? "down" : "up"} last />

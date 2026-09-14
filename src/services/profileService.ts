@@ -1,3 +1,4 @@
+import { isoDate } from "@/src/lib/cohortStart";
 import { appStorage } from "@/src/lib/storage";
 import { resetLabMembership } from "@/src/services/labMembershipService";
 
@@ -486,7 +487,7 @@ export function updateUser(patch: Partial<ProfileUser>) {
 export function updateWeight(lb: number) {
   const next = Math.round(lb * 10) / 10;
   const now = new Date();
-  const date = now.toISOString().slice(0, 10);
+  const date = isoDate(now);
   const label = now.toLocaleString("en-US", { month: "short", day: "numeric" });
   const weightHistory = [
     ...profile.weightHistory.filter((entry) => entry.date !== date),
@@ -530,7 +531,7 @@ export function updatePreferences(patch: Partial<AppPreferences>) {
 export function completeOnboarding(result: OnboardingResult) {
   const now = new Date();
   const memberSinceLabel = now.toLocaleString("en-US", { month: "short", year: "numeric" });
-  const date = now.toISOString().slice(0, 10);
+  const date = isoDate(now);
   const label = now.toLocaleString("en-US", { month: "short", day: "numeric" });
   const user: ProfileUser = {
     ...profile.user,

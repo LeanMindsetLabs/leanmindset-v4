@@ -1,7 +1,7 @@
 import { type Href, router, useLocalSearchParams } from "expo-router";
 import { StyleSheet, View } from "react-native";
 import { prepTasks } from "@/src/content/labs";
-import ScrollableScreen from "@/src/layout/ScrollableScreen";
+import KeyboardScreen from "@/src/layout/KeyboardScreen";
 import { nextPrepTaskId } from "@/src/services/labMembershipService";
 import { colors } from "@/src/theme/colors";
 import { radius } from "@/src/theme/radius";
@@ -28,12 +28,12 @@ export default function PrepTaskScreen() {
   }
 
   return (
-    <ScrollableScreen>
+    <KeyboardScreen>
       <LabFlowHeader eyebrow={resource ? "Preparation resource" : "Preparation"} title={copy.title} />
       <View style={styles.card}>
         <PrepStepPanel key={taskId} taskId={taskId ?? ""} onDone={goNext} />
       </View>
-    </ScrollableScreen>
+    </KeyboardScreen>
   );
 }
 

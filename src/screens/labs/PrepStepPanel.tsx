@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useRef, useState, type Ref } from "react";
+import { Keyboard, Platform, Pressable, StyleSheet, Text, View, type TextInput } from "react-native";
 import { prepTasks } from "@/src/content/labs";
 import { prepGroceryGroups, prepSupplements } from "@/src/content/prepResources";
 import { useLabMembership } from "@/src/hooks/useLabMembership";
@@ -24,6 +24,7 @@ import { radius } from "@/src/theme/radius";
 import { spacing } from "@/src/theme/spacing";
 import { typography } from "@/src/theme/typography";
 import AppTextInput from "@/src/ui/AppTextInput";
+import { CheckInInputAccessory, DECIMAL_PAD_ACCESSORY } from "@/src/ui/CheckInInputAccessory";
 import BlueCta from "@/src/ui/BlueCta";
 import SecondaryButton from "@/src/ui/SecondaryButton";
 
@@ -95,6 +96,7 @@ function WeightStep({ onFinish, onLater }: { onFinish: () => void; onLater: () =
       <Text style={typography.bodySmall} maxFontSizeMultiplier={1.4}>
         {`Now ${formatWeight(profile.weightLb, unit)}`}
       </Text>
+      <CheckInInputAccessory />
       <AppTextInput
         value={value}
         onChangeText={setValue}
@@ -103,6 +105,9 @@ function WeightStep({ onFinish, onLater }: { onFinish: () => void; onLater: () =
         placeholderTextColor={colors.textMuted}
         accessibilityLabel="Starting weight"
         style={styles.input}
+        returnKeyType="done"
+        inputAccessoryViewID={Platform.OS === "ios" ? DECIMAL_PAD_ACCESSORY : undefined}
+        onSubmitEditing={() => Keyboard.dismiss()}
       />
       <BlueCta
         label={prepTasks.weight.cta}
@@ -120,11 +125,14 @@ function WeightStep({ onFinish, onLater }: { onFinish: () => void; onLater: () =
 
 function MeasurementsStep({ onFinish, onLater }: { onFinish: () => void; onLater: () => void }) {
   const { profile } = useProfile();
+  const chestRef = useRef<TextInput>(null);
+  const hipsRef = useRef<TextInput>(null);
   const [unit, setUnit] = useState<"in" | "cm">("in");
   const metric = unit === "cm";
   const [waist, setWaist] = useState(measureDisplay(profile.measurements.waist, metric));
   const [chest, setChest] = useState(measureDisplay(profile.measurements.chest, metric));
   const [hips, setHips] = useState(measureDisplay(profile.measurements.hips, metric));
+  const [focused, setFocused] = useState<"waist" | "chest" | "hips">("waist");
 
   function switchUnit(next: "in" | "cm") {
     if (next === unit) return;
@@ -140,10 +148,43 @@ function MeasurementsStep({ onFinish, onLater }: { onFinish: () => void; onLater
       <Text style={typography.body} maxFontSizeMultiplier={1.4}>
         {prepTasks.measurements.body}
       </Text>
+      <CheckInInputAccessory
+        onPress={() => {
+          if (focused === "waist") {
+            chestRef.current?.focus();
+            return;
+          }
+          if (focused === "chest") {
+            hipsRef.current?.focus();
+            return;
+          }
+          Keyboard.dismiss();
+        }}
+      />
       <UnitPills value={unit} options={["in", "cm"]} onChange={switchUnit} />
-      <MeasureField label={`Waist (${unit})`} value={waist} onChange={setWaist} />
-      <MeasureField label={`Chest (${unit})`} value={chest} onChange={setChest} />
-      <MeasureField label={`Hips (${unit})`} value={hips} onChange={setHips} />
+      <MeasureField
+        label={`Waist (${unit})`}
+        value={waist}
+        onChange={setWaist}
+        onFocus={() => setFocused("waist")}
+        onSubmit={() => chestRef.current?.focus()}
+      />
+      <MeasureField
+        inputRef={chestRef}
+        label={`Chest (${unit})`}
+        value={chest}
+        onChange={setChest}
+        onFocus={() => setFocused("chest")}
+        onSubmit={() => hipsRef.current?.focus()}
+      />
+      <MeasureField
+        inputRef={hipsRef}
+        label={`Hips (${unit})`}
+        value={hips}
+        onChange={setHips}
+        onFocus={() => setFocused("hips")}
+        onSubmit={() => Keyboard.dismiss()}
+      />
       <BlueCta
         label={prepTasks.measurements.cta}
         onPress={() => {
@@ -327,13 +368,19 @@ function GuideStep({ onFinish, onLater }: { onFinish: () => void; onLater: () =>
 }
 
 function MeasureField({
+  inputRef,
   label,
   value,
   onChange,
+  onFocus,
+  onSubmit,
 }: {
+  inputRef?: Ref<TextInput>;
   label: string;
   value: string;
   onChange: (next: string) => void;
+  onFocus?: () => void;
+  onSubmit?: () => void;
 }) {
   return (
     <View style={styles.field}>
@@ -341,13 +388,18 @@ function MeasureField({
         {label}
       </Text>
       <AppTextInput
+        ref={inputRef}
         value={value}
         onChangeText={onChange}
+        onFocus={onFocus}
         keyboardType="decimal-pad"
         placeholder="0"
         placeholderTextColor={colors.textMuted}
         accessibilityLabel={label}
         style={styles.input}
+        returnKeyType="done"
+        inputAccessoryViewID={Platform.OS === "ios" ? DECIMAL_PAD_ACCESSORY : undefined}
+        onSubmitEditing={onSubmit}
       />
     </View>
   );

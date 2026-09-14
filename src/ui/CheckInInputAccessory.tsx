@@ -1,29 +1,37 @@
 import { InputAccessoryView, Keyboard, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { colors } from "@/src/theme/colors";
 
-export const CHECKIN_INPUT_ACCESSORY = "lm-checkin-accessory";
+export const DECIMAL_PAD_ACCESSORY = "lm-decimal-pad-accessory";
+/** @deprecated Use DECIMAL_PAD_ACCESSORY */
+export const CHECKIN_INPUT_ACCESSORY = DECIMAL_PAD_ACCESSORY;
 
-/** iOS number pads have no Return key. This bar sits on top of the keyboard. */
+/** iOS number pads have no Return key. This blue Enter sits on top of the keyboard. */
 export function CheckInInputAccessory({
-  label,
+  nativeID = DECIMAL_PAD_ACCESSORY,
+  label = "Enter",
   disabled,
   onPress,
 }: {
-  label: string;
+  nativeID?: string;
+  label?: string;
   disabled?: boolean;
-  onPress: () => void;
+  onPress?: () => void;
 }) {
   if (Platform.OS !== "ios") return null;
 
   return (
-    <InputAccessoryView nativeID={CHECKIN_INPUT_ACCESSORY}>
+    <InputAccessoryView nativeID={nativeID}>
       <View style={styles.bar}>
         <Pressable
           accessibilityRole="button"
+          accessibilityLabel={label}
           disabled={disabled}
           onPress={() => {
+            if (onPress) {
+              onPress();
+              return;
+            }
             Keyboard.dismiss();
-            onPress();
           }}
           style={[styles.btn, disabled && styles.btnOff]}
         >
@@ -48,6 +56,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 8,
+    minWidth: 76,
+    alignItems: "center",
   },
   btnOff: {
     opacity: 0.4,
