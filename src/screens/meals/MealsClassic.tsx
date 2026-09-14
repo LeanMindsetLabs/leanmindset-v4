@@ -119,7 +119,7 @@ export default function MealsClassic({ onAskCoach }: Props) {
   if (view === "detail" && selectedMeal) {
     return (
       <Subpage title={selectedMeal.name} onBack={() => setView("main")}>
-        <MealThumb meal={selectedMeal} height={180} radius={12} />
+        <MealThumb meal={selectedMeal} height={180} radius={12} contentFit="contain" />
         <Text style={styles.detailMeta}>
           {selectedMeal.kcal} kcal · {selectedMeal.protein}g protein
         </Text>

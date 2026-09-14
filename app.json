@@ -34,6 +34,7 @@
     },
     "plugins": [
       "expo-router",
+      "expo-updates",
       [
         "expo-splash-screen",
         {
@@ -54,6 +55,14 @@
       "eas": {
         "projectId": "4eae31cf-d236-4069-83b1-555df42fb8d1"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/4eae31cf-d236-4069-83b1-555df42fb8d1",
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 3000
     }
   }
 }

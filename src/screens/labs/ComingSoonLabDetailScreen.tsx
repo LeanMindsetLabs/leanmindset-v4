@@ -44,7 +44,7 @@ export default function ComingSoonLabDetailScreen() {
       <View style={styles.fullHero}>
         <Image
           source={labPhotos[offer.photo]}
-          style={[styles.heroPhoto, Platform.OS === "web" ? styles.heroPhotoBw : null]}
+          style={[styles.heroPhoto, Platform.OS === "web" ? (styles.heroPhotoBw as never) : null]}
           contentFit="cover"
           contentPosition={offer.id === "transformation" ? { top: "40%", left: "58%" } : { top: "40%", left: "50%" }}
         />

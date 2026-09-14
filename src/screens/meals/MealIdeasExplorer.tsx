@@ -54,7 +54,7 @@ export default function MealIdeasExplorer() {
             ← Meal Ideas
           </Text>
         </Pressable>
-        <MealThumb meal={selected.meal} height={150} radius={radius.lg} />
+        <MealThumb meal={selected.meal} height={150} radius={radius.lg} contentFit="contain" />
         <Text style={styles.slotKicker} maxFontSizeMultiplier={1.2}>
           {mealSlotLabel(selected.slot)}
         </Text>

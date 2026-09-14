@@ -8,13 +8,15 @@
       "distribution": "internal",
       "android": {
         "buildType": "apk"
-      }
+      },
+      "channel": "preview"
     },
     "production": {
       "autoIncrement": true,
       "ios": {
         "distribution": "store"
-      }
+      },
+      "channel": "production"
     }
   },
   "submit": {

@@ -47,7 +47,7 @@ export default function LabHeroCard({
       <Image
         source={labPhotos[photo]}
         pointerEvents="none"
-        style={[styles.photo, outlined && Platform.OS === "web" ? styles.photoMuted : null]}
+        style={[styles.photo, outlined && Platform.OS === "web" ? (styles.photoMuted as never) : null]}
         contentFit="cover"
         contentPosition={photo === "starter" ? { top: "38%", left: "28%" } : "center"}
       />

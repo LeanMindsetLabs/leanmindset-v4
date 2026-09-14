@@ -1,9 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, router } from "expo-router";
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { isValidEmail, requestEmailOtp, setFirstTimeFlow } from "@/src/services/profileService";
+import { isValidEmail, MOCK_OTP_CODE, requestEmailOtp, setFirstTimeFlow } from "@/src/services/profileService";
 import { colors } from "@/src/theme/colors";
 import { layout } from "@/src/theme/layout";
 import { radius } from "@/src/theme/radius";
@@ -49,7 +49,17 @@ export default function EmailLoginScreen() {
           <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back" style={styles.navSide}>
             <Ionicons name="chevron-back" size={22} color={colors.white} />
           </Pressable>
-          <Pressable accessibilityRole="button" style={styles.helpBtn}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Help"
+            style={styles.helpBtn}
+            onPress={() =>
+              Alert.alert(
+                "How to sign in",
+                `Enter your email, then use preview code ${MOCK_OTP_CODE} on the next screen. Nothing is emailed yet. Apple and Google sign-in are not available in this build.`,
+              )
+            }
+          >
             <Text style={styles.helpText}>Help (?)</Text>
           </Pressable>
         </View>
@@ -101,10 +111,24 @@ export default function EmailLoginScreen() {
           </View>
 
           <View style={styles.socialRow}>
-            <Pressable style={styles.socialBtn} accessibilityRole="button" accessibilityLabel="Continue with Apple">
+            <Pressable
+              style={styles.socialBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Continue with Apple"
+              onPress={() =>
+                Alert.alert("Use email for now", "Apple sign-in is not wired yet. Enter your email and continue with the preview code.")
+              }
+            >
               <Ionicons name="logo-apple" size={22} color={colors.white} />
             </Pressable>
-            <Pressable style={styles.socialBtn} accessibilityRole="button" accessibilityLabel="Continue with Google">
+            <Pressable
+              style={styles.socialBtn}
+              accessibilityRole="button"
+              accessibilityLabel="Continue with Google"
+              onPress={() =>
+                Alert.alert("Use email for now", "Google sign-in is not wired yet. Enter your email and continue with the preview code.")
+              }
+            >
               <GoogleLogo size={22} />
             </Pressable>
           </View>

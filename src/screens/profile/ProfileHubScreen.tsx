@@ -1,6 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
-import { router } from "expo-router";
 import ScrollableScreen from "@/src/layout/ScrollableScreen";
 import { useLabMembership } from "@/src/hooks/useLabMembership";
 import { useProfile } from "@/src/hooks/useProfile";

@@ -36,7 +36,7 @@ export default function StarterLabDetailScreen() {
       <View style={styles.fullHero}>
         <Image
           source={labPhotos[starterLab.photo]}
-          style={[styles.heroPhoto, Platform.OS === "web" ? styles.heroPhotoMuted : null]}
+          style={[styles.heroPhoto, Platform.OS === "web" ? (styles.heroPhotoMuted as never) : null]}
           contentFit="cover"
           contentPosition={{ top: "38%", left: "28%" }}
         />

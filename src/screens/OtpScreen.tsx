@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { completeOtpLogin, getProfile, getPendingEmail, MOCK_OTP_CODE, verifyOtpCode } from "@/src/services/profileService";
 import { colors } from "@/src/theme/colors";
@@ -66,6 +66,8 @@ export default function OtpScreen() {
     if (secondsLeft > 0) return;
     setSecondsLeft(RESEND_SECONDS);
     setDigits(["", "", "", "", "", ""]);
+    submitted.current = false;
+    Alert.alert("Preview code", `Nothing is emailed. Use ${MOCK_OTP_CODE}, or tap the code above.`);
   }
 
   const timerLabel = `00:${String(secondsLeft).padStart(2, "0")}`;
@@ -115,7 +117,7 @@ export default function OtpScreen() {
           </View>
 
           <View style={styles.resendRow}>
-            <Text style={styles.resendNote}>Didn&apos;t receive code?</Text>
+            <Text style={styles.resendNote}>Didn&apos;t get a code? Nothing is emailed yet.</Text>
             <Text style={styles.resendTimer}>Resend in {timerLabel}</Text>
             <Pressable onPress={resend} disabled={secondsLeft > 0} accessibilityRole="button">
               <Text style={[styles.resendLink, secondsLeft > 0 && styles.resendLinkOff]}>Resend</Text>

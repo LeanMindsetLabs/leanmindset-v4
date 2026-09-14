@@ -11,6 +11,7 @@ import {
 import {
   dailyTargets,
   defaultTargetKg,
+  formatFtIn,
   goalLabel,
 } from "@/src/lib/onboardingMath";
 import { useProfile } from "@/src/hooks/useProfile";
@@ -81,8 +82,7 @@ export default function OnboardingScreen() {
 
   const heightLabel = useMemo(() => {
     if (heightUnit === "cm") return `${Math.round(heightCm)} cm`;
-    const total = Math.round(heightCm / 2.54);
-    return `${Math.floor(total / 12)}'${total % 12}"`;
+    return formatFtIn(heightCm / 2.54);
   }, [heightCm, heightUnit]);
 
   const weightLabel = useMemo(() => {
@@ -166,8 +166,8 @@ export default function OnboardingScreen() {
           }
           below={
             stepId === "complete" ? (
-              <Pressable onPress={() => go(5)} accessibilityRole="button">
-                <Text style={styles.profileLink}>Edit details in Profile</Text>
+              <Pressable onPress={() => go(6)} accessibilityRole="button">
+                <Text style={styles.profileLink}>Edit your basics</Text>
               </Pressable>
             ) : null
           }
