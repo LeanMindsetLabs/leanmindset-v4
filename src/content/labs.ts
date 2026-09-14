@@ -216,7 +216,7 @@ export const joinLabConfirmAuto = {
   eyebrow: "Starter Lab",
   title: "Join Starter Lab?",
   cardTitle: "What happens next",
-  steps: ["Join Starter Lab", "You’re approved right away", "Prep starts now · Day 1 is a Monday"],
+  steps: ["Join Starter Lab", "You’re approved right away", "Day 1 starts today — no Monday wait"],
   note: "No payment is required for Starter Lab.",
   submitCta: "Join Starter Lab",
 } as const;

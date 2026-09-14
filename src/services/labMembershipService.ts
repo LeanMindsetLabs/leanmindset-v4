@@ -116,8 +116,13 @@ export function rehydrateLabMembership() {
   } catch {
     membership = { ...EXPLORER_MEMBERSHIP };
   }
-  if (isAutoLabApproval() && membership.lifecycle === "requested") {
-    approveStarterLab();
+  if (isAutoLabApproval()) {
+    if (membership.lifecycle === "requested") {
+      approveStarterLab();
+    }
+    if (membership.lifecycle === "approved_preparing") {
+      beginStarterLabNow();
+    }
   }
   syncLabCalendar();
   notify();
@@ -155,6 +160,9 @@ export function submitStarterLabRequest(): "approved" | "requested" | "already" 
     if (membership.lifecycle === "requested" || membership.lifecycle === "explorer") {
       approveStarterLab();
     }
+    if (membership.lifecycle === "approved_preparing") {
+      beginStarterLabNow();
+    }
     return "approved";
   }
   if (membership.lifecycle === "requested") {
@@ -189,6 +197,26 @@ export function approveStarterLab() {
 export function grantOffMondayStart() {
   if (membership.lifecycle !== "approved_preparing") return;
   apply({ ...membership, offMondayStartGranted: true });
+}
+
+/** Testers skip prep and the next-Monday cohort gate and enter Day 1 today. */
+export function beginStarterLabNow() {
+  if (membership.lifecycle === "explorer" || membership.lifecycle === "requested") {
+    approveStarterLab();
+  }
+  if (membership.lifecycle !== "approved_preparing") return;
+  const today = todayIso();
+  const tasks = (membership.preparationTasks.length ? membership.preparationTasks : STARTER_PREP_TASKS).map(
+    (task) => ({ ...task, complete: true }),
+  );
+  apply({
+    ...membership,
+    welcomeDismissed: true,
+    offMondayStartGranted: true,
+    startDate: today,
+    preparationTasks: tasks,
+  });
+  startStarterLab();
 }
 
 export function dismissPrepWelcome() {
@@ -272,6 +300,9 @@ export function prepIsComplete(snapshot = membership) {
 }
 
 export function canStartStarterLab(snapshot = membership, today = todayIso()) {
+  if (isAutoLabApproval() && snapshot.lifecycle === "approved_preparing") {
+    return true;
+  }
   return canStartLab({
     prepComplete: prepIsComplete(snapshot),
     startIso: snapshot.startDate,
