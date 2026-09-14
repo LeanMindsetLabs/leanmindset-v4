@@ -11,6 +11,7 @@ import {
   resetLabMembership,
   startDateLabel,
 } from "@/src/services/labMembershipService";
+import { LAB_ADMIN_EMAIL, isAutoLabApproval } from "@/src/lib/labApproval";
 import { colors } from "@/src/theme/colors";
 import { radius } from "@/src/theme/radius";
 import { spacing } from "@/src/theme/spacing";
@@ -63,7 +64,9 @@ export default function AdminEnrollmentScreen() {
         ) : null}
         {!pending && !preparing ? (
           <Text style={typography.bodySmall} maxFontSizeMultiplier={1.4}>
-            Approve appears here after a member submits a Starter Lab request. Off-Monday start is a special permission while they are preparing.
+            {isAutoLabApproval()
+              ? `Testers are approved as soon as they join. Email review to ${LAB_ADMIN_EMAIL} is for the final version.`
+              : "Approve appears here after a member submits a Starter Lab request. Off-Monday start is a special permission while they are preparing."}
           </Text>
         ) : null}
         {membership.lifecycle !== "explorer" ? (

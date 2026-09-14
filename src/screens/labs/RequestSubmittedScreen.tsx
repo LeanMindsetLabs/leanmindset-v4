@@ -1,7 +1,9 @@
 import { router } from "expo-router";
+import { useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { requestSubmitted, starterLab } from "@/src/content/labs";
 import ScrollableScreen from "@/src/layout/ScrollableScreen";
+import { useLabMembership } from "@/src/hooks/useLabMembership";
 import { colors } from "@/src/theme/colors";
 import { radius } from "@/src/theme/radius";
 import { spacing } from "@/src/theme/spacing";
@@ -10,6 +12,14 @@ import BlueCta from "@/src/ui/BlueCta";
 import LabFlowHeader from "./LabFlowHeader";
 
 export default function RequestSubmittedScreen() {
+  const { membership } = useLabMembership();
+
+  useEffect(() => {
+    if (membership.lifecycle !== "requested") {
+      router.replace("/(tabs)");
+    }
+  }, [membership.lifecycle]);
+
   return (
     <ScrollableScreen>
       <LabFlowHeader eyebrow={requestSubmitted.eyebrow} title={requestSubmitted.title} />

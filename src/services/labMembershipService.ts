@@ -7,6 +7,7 @@ import {
   programDayNumber,
   rollMissedMonday,
 } from "@/src/lib/cohortStart";
+import { isAutoLabApproval } from "@/src/lib/labApproval";
 import { appStorage } from "@/src/lib/storage";
 import type { LabLifecycleState, LabMembership, LabPrepChecklist, LabPreparationTask } from "@/src/types";
 
@@ -115,6 +116,9 @@ export function rehydrateLabMembership() {
   } catch {
     membership = { ...EXPLORER_MEMBERSHIP };
   }
+  if (isAutoLabApproval() && membership.lifecycle === "requested") {
+    approveStarterLab();
+  }
   syncLabCalendar();
   notify();
 }
@@ -140,6 +144,23 @@ export function requestStarterLab() {
     checkIn: null,
     progress: null,
   });
+}
+
+/** Join CTA. Testers are approved immediately; final version emails the admin approve link. */
+export function submitStarterLabRequest(): "approved" | "requested" | "already" {
+  if (membership.lifecycle === "explorer") {
+    requestStarterLab();
+  }
+  if (isAutoLabApproval()) {
+    if (membership.lifecycle === "requested" || membership.lifecycle === "explorer") {
+      approveStarterLab();
+    }
+    return "approved";
+  }
+  if (membership.lifecycle === "requested") {
+    return "requested";
+  }
+  return "already";
 }
 
 export function approveStarterLab() {

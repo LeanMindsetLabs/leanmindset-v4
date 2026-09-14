@@ -211,6 +211,16 @@ export const joinLabConfirm = {
   submitCta: "Submit request",
 } as const;
 
+/** Tester path: no coach wait. Flip `LAB_APPROVAL_MODE` to restore `joinLabConfirm`. */
+export const joinLabConfirmAuto = {
+  eyebrow: "Starter Lab",
+  title: "Join Starter Lab?",
+  cardTitle: "What happens next",
+  steps: ["Join Starter Lab", "You’re approved right away", "Prep starts now · Day 1 is a Monday"],
+  note: "No payment is required for Starter Lab.",
+  submitCta: "Join Starter Lab",
+} as const;
+
 export const requestSubmitted = {
   eyebrow: "Pending approval",
   title: "Request submitted",
