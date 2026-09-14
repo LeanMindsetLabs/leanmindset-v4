@@ -5,9 +5,10 @@ import { router } from "expo-router";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import Svg, { Circle } from "react-native-svg";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { starterLab, starterLabDetail } from "@/src/content/labs";
+import { starterLab, starterLabDetail, openMyLab, starterLabCta } from "@/src/content/labs";
 import ScrollableScreen from "@/src/layout/ScrollableScreen";
 import { IPHONE_15 } from "@/src/layout/WebPhonePreview";
+import { useLabMembership } from "@/src/hooks/useLabMembership";
 import { labPhotos } from "@/src/lib/media";
 import { colors } from "@/src/theme/colors";
 import { layout } from "@/src/theme/layout";
@@ -19,6 +20,16 @@ import BlueCta from "@/src/ui/BlueCta";
 export default function StarterLabDetailScreen() {
   const insets = useSafeAreaInsets();
   const topInset = Platform.OS === "web" ? IPHONE_15.status : insets.top;
+  const { membership } = useLabMembership();
+  const ctaLabel = starterLabCta(membership.lifecycle);
+
+  function onPrimary() {
+    if (membership.lifecycle === "explorer") {
+      router.push("/labs/join");
+      return;
+    }
+    openMyLab(membership.lifecycle);
+  }
 
   return (
     <ScrollableScreen padded={false} edges={[]} contentStyle={styles.heroScreen}>
@@ -27,7 +38,7 @@ export default function StarterLabDetailScreen() {
           source={labPhotos[starterLab.photo]}
           style={[styles.heroPhoto, Platform.OS === "web" ? styles.heroPhotoMuted : null]}
           contentFit="cover"
-          contentPosition={{ top: "38%", left: "30%" }}
+          contentPosition={{ top: "38%", left: "28%" }}
         />
         <View style={styles.heroDim} />
         <LinearGradient
@@ -47,12 +58,12 @@ export default function StarterLabDetailScreen() {
         <View style={styles.heroOnImage}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Join Starter Lab"
-            onPress={() => router.push("/labs/join")}
+            accessibilityLabel={ctaLabel}
+            onPress={onPrimary}
             style={({ pressed }) => [styles.joinBadge, pressed && styles.joinCtaPressed]}
           >
             <Text style={styles.joinBadgeText} maxFontSizeMultiplier={1.2}>
-              {starterLabDetail.joinCta}
+              {ctaLabel}
             </Text>
           </Pressable>
           <Text style={styles.heroTitle} maxFontSizeMultiplier={1.3}>
@@ -86,7 +97,7 @@ export default function StarterLabDetailScreen() {
         </View>
 
         <IncludedCard />
-        <HowItWorksCard />
+        <HowItWorksCard ctaLabel={ctaLabel} onPrimary={onPrimary} />
       </View>
     </ScrollableScreen>
   );
@@ -127,7 +138,7 @@ function IncludedCard() {
   );
 }
 
-function HowItWorksCard() {
+function HowItWorksCard({ ctaLabel, onPrimary }: { ctaLabel: string; onPrimary: () => void }) {
   return (
     <View style={styles.card}>
       <Text style={typography.heading3} maxFontSizeMultiplier={1.3}>
@@ -149,9 +160,9 @@ function HowItWorksCard() {
         </View>
       ))}
       <BlueCta
-        label={starterLabDetail.joinCta}
-        accessibilityLabel="Join Starter Lab"
-        onPress={() => router.push("/labs/join")}
+        label={ctaLabel}
+        accessibilityLabel={ctaLabel}
+        onPress={onPrimary}
       />
       <Text style={styles.note} maxFontSizeMultiplier={1.4}>
         Free. Your coach reviews every request before the Lab starts.

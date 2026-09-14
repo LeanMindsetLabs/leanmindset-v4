@@ -4,7 +4,7 @@ import { router } from "expo-router";
 import ScrollableScreen from "@/src/layout/ScrollableScreen";
 import { useLabMembership } from "@/src/hooks/useLabMembership";
 import { useProfile } from "@/src/hooks/useProfile";
-import { myLabProfile } from "@/src/content/labs";
+import { myLabProfile, openMyLab } from "@/src/content/labs";
 import { labStatusLabel } from "@/src/services/labMembershipService";
 import { colors } from "@/src/theme/colors";
 import { layout } from "@/src/theme/layout";
@@ -121,9 +121,13 @@ function MyLabAccessCard() {
   const inLab = membership.lifecycle !== "explorer";
   const day = membership.progress?.day ?? membership.day;
   const total = membership.progress?.totalDays ?? 30;
-  const meta = inLab
-    ? `${membership.labName ?? "Starter Lab"}${day != null ? ` · Day ${day} of ${total}` : ""}`
-    : "Not in a Lab yet";
+  const meta = !inLab
+    ? "Not in a Lab yet"
+    : membership.lifecycle === "requested"
+      ? `${membership.labName ?? "Starter Lab"} · Pending`
+      : membership.lifecycle === "approved_preparing"
+        ? `${membership.labName ?? "Starter Lab"} · Preparing`
+        : `${membership.labName ?? "Starter Lab"}${day != null ? ` · Day ${day} of ${total}` : ""}`;
 
   return (
     <View style={styles.labCard}>
@@ -132,17 +136,7 @@ function MyLabAccessCard() {
       <Text style={styles.labStatus}>{`Status: ${status}`}</Text>
       <BlueCta
         label={inLab ? myLabProfile.openCta : myLabProfile.exploreCta}
-        onPress={() => {
-          if (!inLab) {
-            router.push("/labs");
-            return;
-          }
-          if (membership.lifecycle === "completed") {
-            router.push("/labs/results");
-            return;
-          }
-          router.push("/(tabs)");
-        }}
+        onPress={() => openMyLab(membership.lifecycle)}
       />
     </View>
   );

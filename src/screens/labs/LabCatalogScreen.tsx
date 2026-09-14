@@ -1,9 +1,13 @@
-import { comingSoonLabs, labCatalog, openLab, starterLab } from "@/src/content/labs";
+import { comingSoonLabs, labCatalog, openLab, starterLab, starterLabBadge } from "@/src/content/labs";
+import { useLabMembership } from "@/src/hooks/useLabMembership";
 import ScrollableScreen from "@/src/layout/ScrollableScreen";
 import LabHeroCard from "@/src/ui/LabHeroCard";
 import LabFlowHeader from "./LabFlowHeader";
 
 export default function LabCatalogScreen() {
+  const { membership } = useLabMembership();
+  const starterBadge = starterLabBadge(membership.lifecycle);
+
   return (
     <ScrollableScreen>
       <LabFlowHeader eyebrow={labCatalog.eyebrow} title={labCatalog.title} />
@@ -12,8 +16,8 @@ export default function LabCatalogScreen() {
         title={starterLab.name}
         meta={starterLab.meta}
         pitch={starterLab.pitch}
-        badge="Start here"
-        badgeAccent
+        badge={starterBadge.label}
+        badgeAccent={starterBadge.accent}
         onPress={() => openLab(starterLab.id)}
       />
       {comingSoonLabs.map((offer) => (

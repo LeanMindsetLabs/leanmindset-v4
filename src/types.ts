@@ -18,6 +18,13 @@ export type LabPreparationTask = {
   complete: boolean;
 };
 
+/** Shopping / photo progress that stays editable after a step is opened again. */
+export type LabPrepChecklist = {
+  groceryChecked: string[];
+  supplementChecked: string[];
+  photos: string[];
+};
+
 export type LabDailyTask = {
   id: string;
   title: string;
@@ -42,12 +49,20 @@ export type LabMembership = {
   lifecycle: LabLifecycleState;
   labId: string | null;
   labName: string | null;
+  /** Cohort Day 1, ISO YYYY-MM-DD. Always a Monday unless admin grants otherwise. */
   startDate: string | null;
   day: number | null;
   requestedAt: string | null;
   approvedAt: string | null;
   welcomeDismissed: boolean;
+  /** Admin special permission to start Day 1 on a non-Monday. */
+  offMondayStartGranted: boolean;
+  /** ISO date the member actually tapped Start. */
+  programStartedOn: string | null;
+  /** Last calendar date daily tasks were built for. */
+  activeDayKey: string | null;
   preparationTasks: LabPreparationTask[];
+  prepChecklist: LabPrepChecklist;
   dailyTasks: LabDailyTask[];
   checkIn: LabCheckIn | null;
   progress: LabProgress | null;

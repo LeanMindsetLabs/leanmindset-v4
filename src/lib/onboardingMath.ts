@@ -83,8 +83,37 @@ export function defaultTargetKg(goal: GoalType, currentKg: number) {
 
 export function cmToDisplay(cm: number, unit: "cm" | "in") {
   if (unit === "cm") return { value: Math.round(cm), suffix: "cm" };
-  const total = cm / 2.54;
+  const total = Math.round(cm / 2.54);
   const feet = Math.floor(total / 12);
-  const inches = Math.round(total - feet * 12);
+  const inches = total - feet * 12;
   return { value: feet, suffix: `${inches}"`, feet, inches };
+}
+
+/** 54–84 inches → 4'6" … 7'0". */
+export function formatFtIn(totalInches: number) {
+  const clamped = Math.max(54, Math.min(84, Math.round(totalInches)));
+  const feet = Math.floor(clamped / 12);
+  const inches = clamped % 12;
+  return `${feet}'${inches}"`;
+}
+
+export function parseFtIn(label: string) {
+  const match = label.trim().match(/^(\d+)\s*'\s*(\d+)\s*"?$/);
+  if (!match) return null;
+  return Number(match[1]) * 12 + Number(match[2]);
+}
+
+export function heightMarks(unit: "cm" | "in") {
+  if (unit === "cm") return range(140, 210).map(String);
+  return range(54, 84).map(formatFtIn);
+}
+
+export function heightDraftFromCm(cm: number, unit: "cm" | "in") {
+  if (unit === "cm") return String(Math.round(cm));
+  return formatFtIn(cm / 2.54);
+}
+
+export function heightDraftToCm(draft: string, unit: "cm" | "in") {
+  if (unit === "cm") return Number(draft);
+  return (parseFtIn(draft) ?? 67) * 2.54;
 }

@@ -3,7 +3,14 @@ import { StyleSheet, Text, View } from "react-native";
 import ScrollableScreen from "@/src/layout/ScrollableScreen";
 import { useLabMembership } from "@/src/hooks/useLabMembership";
 import { useProfile } from "@/src/hooks/useProfile";
-import { approveStarterLab, labStatusLabel, resetLabMembership } from "@/src/services/labMembershipService";
+import { displayStoredDate } from "@/src/lib/cohortStart";
+import {
+  approveStarterLab,
+  grantOffMondayStart,
+  labStatusLabel,
+  resetLabMembership,
+  startDateLabel,
+} from "@/src/services/labMembershipService";
 import { colors } from "@/src/theme/colors";
 import { radius } from "@/src/theme/radius";
 import { spacing } from "@/src/theme/spacing";
@@ -16,6 +23,7 @@ export default function AdminEnrollmentScreen() {
   const { profile } = useProfile();
   const { membership } = useLabMembership();
   const pending = membership.lifecycle === "requested";
+  const preparing = membership.lifecycle === "approved_preparing";
 
   return (
     <ScrollableScreen>
@@ -26,8 +34,13 @@ export default function AdminEnrollmentScreen() {
         </Text>
         <Text style={typography.bodySmall} maxFontSizeMultiplier={1.4}>
           {`${membership.labName ?? "No Lab"} · ${labStatusLabel(membership)}`}
-          {membership.requestedAt ? ` · Requested ${membership.requestedAt}` : ""}
+          {membership.requestedAt ? ` · Requested ${displayStoredDate(membership.requestedAt)}` : ""}
         </Text>
+        {membership.startDate ? (
+          <Text style={typography.body} maxFontSizeMultiplier={1.4}>
+            {`Day 1 · ${startDateLabel(membership)}`}
+          </Text>
+        ) : null}
         {pending ? (
           <BlueCta
             label="Approve Starter Lab"
@@ -36,11 +49,23 @@ export default function AdminEnrollmentScreen() {
               router.replace("/(tabs)");
             }}
           />
-        ) : (
+        ) : null}
+        {preparing && !membership.offMondayStartGranted ? (
+          <BlueCta
+            label="Allow start besides Monday"
+            onPress={grantOffMondayStart}
+          />
+        ) : null}
+        {preparing && membership.offMondayStartGranted ? (
           <Text style={typography.bodySmall} maxFontSizeMultiplier={1.4}>
-            Approve appears here after a member submits a Starter Lab request.
+            Off-Monday start is allowed. They can tap Start Starter Lab as soon as prep is done.
           </Text>
-        )}
+        ) : null}
+        {!pending && !preparing ? (
+          <Text style={typography.bodySmall} maxFontSizeMultiplier={1.4}>
+            Approve appears here after a member submits a Starter Lab request. Off-Monday start is a special permission while they are preparing.
+          </Text>
+        ) : null}
         {membership.lifecycle !== "explorer" ? (
           <SecondaryButton label="Reset to explorer" onPress={resetLabMembership} />
         ) : null}

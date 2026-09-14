@@ -1,5 +1,6 @@
 import { router } from "expo-router";
 import type { LabPhotoKey } from "@/src/lib/media";
+import type { LabLifecycleState } from "@/src/types";
 
 export type LabOffer = {
   id: string;
@@ -34,6 +35,73 @@ export function labRoute(id: string) {
 
 export function openLab(id: string) {
   router.push(labRoute(id), { withAnchor: true });
+}
+
+export function openMyLab(lifecycle: LabLifecycleState) {
+  if (lifecycle === "requested") {
+    router.push("/labs/submitted");
+    return;
+  }
+  if (lifecycle === "approved_preparing") {
+    router.push("/labs/prep");
+    return;
+  }
+  if (lifecycle === "active") {
+    router.push("/labs/progress");
+    return;
+  }
+  if (lifecycle === "completed") {
+    router.push("/labs/results");
+    return;
+  }
+  router.push("/labs");
+}
+
+/** Meals, train, and evening check-in from Today’s plan — never listed on Home. */
+export function openDailyTask(id: string) {
+  if (id === "train") {
+    router.push("/(tabs)/train");
+    return;
+  }
+  if (id === "checkin") {
+    router.push("/(tabs)/checkin");
+    return;
+  }
+  router.push("/(tabs)/meals");
+}
+
+/** Requested through completed — already in Starter Lab, so never “Start here”. */
+export function isInStarterLab(lifecycle: LabLifecycleState) {
+  return lifecycle !== "explorer";
+}
+
+export function starterLabBadge(lifecycle: LabLifecycleState): { label: string; accent: boolean } {
+  switch (lifecycle) {
+    case "requested":
+      return { label: "Pending", accent: false };
+    case "approved_preparing":
+      return { label: "Preparing", accent: false };
+    case "active":
+      return { label: "Active", accent: false };
+    case "completed":
+      return { label: "Completed", accent: false };
+    default:
+      return { label: "Start here", accent: true };
+  }
+}
+
+export function starterLabCta(lifecycle: LabLifecycleState) {
+  switch (lifecycle) {
+    case "requested":
+      return "View request status";
+    case "approved_preparing":
+    case "active":
+      return "Open My Lab";
+    case "completed":
+      return "View my results";
+    default:
+      return starterLabDetail.joinCta;
+  }
 }
 
 export const starterLab: LabOffer = {
@@ -127,7 +195,7 @@ export const starterLabDetail = {
   ],
   howTitle: "How it works",
   steps: [
-    { number: "01", title: "Prepare", body: "Get ready in 2 days" },
+    { number: "01", title: "Prepare", body: "Get ready before Monday" },
     { number: "02", title: "Follow", body: "Your daily plan" },
     { number: "03", title: "Check in", body: "Track and improve" },
   ],
@@ -138,7 +206,7 @@ export const joinLabConfirm = {
   eyebrow: "Starter Lab",
   title: "Request to join?",
   cardTitle: "What happens next",
-  steps: ["Send your request", "Coach reviews and approves", "Complete a 2-day preparation"],
+  steps: ["Send your request", "Coach reviews and approves", "Prep starts after approve · Day 1 is a Monday"],
   note: "No payment is required for Starter Lab.",
   submitCta: "Submit request",
 } as const;
@@ -161,60 +229,120 @@ export const pendingHome = {
   keepGoingBody: "General workouts · Meal ideas · Coach chat",
 } as const;
 
+/** Status copy for the Home insight card (the purple box). One state per Explore / Wait / Prep / Active / Done. */
+export const homeLabStatus = {
+  explorer: {
+    subgreeting: "Let’s make it a great day.",
+    title: "Exploring",
+    body: "You’re not in a Lab yet. Starter Lab is the free 30-day path — meals, training, and daily check-ins.",
+    cta: "View Labs",
+  },
+  pending: {
+    subgreeting: "Your Starter Lab request is with your coach.",
+    title: "Waiting",
+    body: "Request pending. Keep browsing meals, training, and labs. This card updates when you’re approved.",
+    cta: "View status",
+    badge: "Pending",
+    pitch: "Your coach is reviewing this request.",
+    heroKicker: "Pending",
+    heroTitle: "Starter Lab",
+    heroMeta: "Your coach is reviewing this request.",
+    heroCta: "View request status",
+  },
+  approved: {
+    subgreeting: "Congrats — you’re approved.",
+    title: "Preparing",
+    body: "Open My Lab anytime to check items off. Photos and shopping can wait.",
+    cta: "Start preparing",
+    continueCta: "Continue preparation",
+    readyTitle: "Preparing",
+    readyBody: "Prep is done. Day 1 is Monday only unless your coach allows another day.",
+    heroKicker: "Get ready",
+    heroTitle: "Starter Lab",
+    heroCta: "Proceed to preparation",
+  },
+  active: {
+    subgreeting: "You’re in Starter Lab.",
+    title: "Active",
+    body: "Follow today’s meals, training, and evening check-in.",
+    cta: "Today’s plan",
+    progressCta: "View progress",
+  },
+  completed: {
+    subgreeting: "You crushed it — Starter Lab complete.",
+    title: "Completed",
+    body: "26 consistent days · 87% adherence. Your history stays in My Lab.",
+    cta: "View my results",
+    heroKicker: "You did it",
+    heroTitle: "Starter Lab",
+    heroMeta: "30 of 30 days complete",
+  },
+} as const;
+
 export const approvedWelcome = {
   eyebrow: "Starter Lab approved",
   title: "You’re in!",
-  startLabel: "Your Lab starts",
-  prepLabel: "2 days to prepare",
-  body: "Let’s get you ready for success. Complete preparation, then your 30-day Lab begins.",
+  startLabel: "Day 1 starts",
+  prepLabel: "Prep starts now",
+  body: "Complete preparation now. Program Day 1 is always a Monday, with at least two days to get ready.",
   cta: "Start preparing →",
 } as const;
 
 export const prepHub = {
-  eyebrow: "Starts in 2 days",
+  eyebrow: "Preparation",
   title: "My Lab",
   cardTitle: "Preparation",
   continueCta: "Continue preparation",
   startCta: "Start Starter Lab",
   completeTitle: "Preparation complete",
-  completeBody: "You’re ready. Start Starter Lab when you want to begin Day 1.",
+  completeBody: "You’re ready. Day 1 starts Monday. A mid-week start needs permission from your coach.",
+  lockedCtaPrefix: "Starts",
+  missedBody: "The last Monday passed. Day 1 is now the next Monday.",
+  grantedBody: "Your coach allowed you to start on a day other than Monday.",
 } as const;
 
 export const prepTasks = {
   weight: {
     title: "Starting weight",
-    body: "Log a baseline weight so we can track change across the 30 days.",
-    cta: "Mark weight saved",
+    body: "Log a baseline weight so we can track change across the 30 days. Pounds is the default — switch to kg if you prefer.",
+    cta: "Save starting weight",
+    laterCta: "I’ll add this later",
   },
   measurements: {
     title: "Measurements",
-    body: "Waist, chest, and hips — optional, but useful for progress photos.",
-    cta: "Mark measurements saved",
+    body: "Waist, chest, and hips in inches by default — switch to cm if you prefer. Optional, and you can come back anytime.",
+    cta: "Save measurements",
+    laterCta: "I’ll add this later",
   },
   photos: {
     title: "Before photos",
-    body: "Front, side, and back. Keep these private to you and your coach.",
-    cta: "Mark photos saved",
+    body: "Front, side, and back. Keep these private to you and your coach. You can add them later from My Lab or Profile.",
+    cta: "Continue",
+    laterCta: "I’ll add photos later",
   },
   grocery: {
     title: "Grocery list",
-    body: "Protein, produce, and pantry staples for the first week.",
-    cta: "Mark grocery list ready",
+    body: "Shop these staples when you can. Check items off as you pick them up — no weights, just the list.",
+    cta: "Mark list ready",
+    laterCta: "I’ll shop later",
   },
   supplements: {
     title: "Supplements",
-    body: "Optional. Confirm what you’ll take, or skip if you don’t use any.",
-    cta: "Mark supplements reviewed",
+    body: "Optional unless your coach or clinician has specifically advised otherwise.",
+    cta: "Confirm reviewed",
+    laterCta: "I’ll review later",
   },
   health: {
     title: "Health check-in",
     body: "Confirm you feel ready to start. Talk to a clinician if you have concerns.",
-    cta: "Mark health check done",
+    cta: "I’m ready to start",
+    laterCta: "I’ll do this later",
   },
   guide: {
     title: "Program guide",
-    body: "Prepare 2 days → Follow your daily plan → Check in to stay on track.",
-    cta: "Mark guide read",
+    body: "Prepare before Monday → Follow your daily plan → Check in to stay on track. Day 1 is always a Monday unless your coach allows another day.",
+    cta: "I’ve read the guide",
+    laterCta: "I’ll read this later",
   },
 } as const;
 

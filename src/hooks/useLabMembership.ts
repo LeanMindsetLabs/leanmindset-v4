@@ -1,10 +1,16 @@
 import { useEffect, useState } from "react";
-import { getLabMembership, subscribeLabMembership } from "../services/labMembershipService";
+import {
+  getLabMembership,
+  subscribeLabMembership,
+  syncLabCalendar,
+} from "../services/labMembershipService";
 
 export function useLabMembership() {
   const [membership, setMembership] = useState(getLabMembership);
 
   useEffect(() => {
+    syncLabCalendar();
+    setMembership({ ...getLabMembership() });
     const unsubscribe = subscribeLabMembership(() => {
       setMembership({ ...getLabMembership() });
     });

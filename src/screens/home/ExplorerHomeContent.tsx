@@ -1,8 +1,16 @@
-import { router } from "expo-router";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { comingSoonLabs, openLab, starterLab } from "@/src/content/labs";
-import { useProfile } from "@/src/hooks/useProfile";
+import { router } from "expo-router";
+import { comingSoonLabs, homeLabStatus, openLab, starterLab, activeHome, isInStarterLab } from "@/src/content/labs";
+import { useLabMembership } from "@/src/hooks/useLabMembership";
+import { formatCohortCountdown } from "@/src/lib/cohortStart";
 import { homeContent } from "@/src/services/homeContent";
+import {
+  canStartStarterLab,
+  dismissPrepWelcome,
+  prepIsComplete,
+  startDateLabel,
+  startStarterLab,
+} from "@/src/services/labMembershipService";
 import { colors } from "@/src/theme/colors";
 import { layout } from "@/src/theme/layout";
 import { spacing } from "@/src/theme/spacing";
@@ -10,43 +18,118 @@ import { typography } from "@/src/theme/typography";
 import HomeHeroChart from "@/src/ui/HomeHeroChart";
 import InsightCard from "@/src/ui/InsightCard";
 import LabHeroCard from "@/src/ui/LabHeroCard";
+import HomeGreeting from "./HomeGreeting";
+import PrepHero from "./PrepHero";
+import CompletedHero from "./CompletedHero";
 
 const copy = homeContent.explorer;
 
-function firstName(name: string) {
-  const source = name.includes("@") ? name.slice(0, name.indexOf("@")) : name;
-  const first = source.trim().split(/\s+/)[0] || "";
-  if (!first) return "there";
-  return first;
-}
-
-function greetingFor(name: string) {
-  const hour = new Date().getHours();
-  const hello = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
-  return `${hello}, ${firstName(name)}!`;
-}
-
 export default function ExplorerHomeContent() {
-  const { profile } = useProfile();
+  const { membership } = useLabMembership();
+  const pending = membership.lifecycle === "requested";
+  const preparing = membership.lifecycle === "approved_preparing";
+  const active = membership.lifecycle === "active";
+  const completed = membership.lifecycle === "completed";
+  const enrolled = isInStarterLab(membership.lifecycle);
+  const allDone = prepIsComplete(membership);
+  const canStart = canStartStarterLab(membership);
+  const startLabel = startDateLabel(membership);
+  const countdown = formatCohortCountdown(membership.startDate);
+  const prepDone = membership.preparationTasks.filter((task) => task.complete).length;
+  const prepTotal = membership.preparationTasks.length || 7;
+  const dailyDone = membership.dailyTasks.filter((task) => task.complete).length;
+  const dailyTotal = membership.dailyTasks.length || 5;
+  const nextTask = membership.dailyTasks.find((task) => !task.complete);
+  const day = membership.progress?.day ?? membership.day ?? 1;
+  const totalDays = membership.progress?.totalDays ?? 30;
+
+  function openPrep() {
+    dismissPrepWelcome();
+    router.push("/labs/prep");
+  }
+
+  const subgreeting = active
+    ? homeLabStatus.active.subgreeting
+    : completed
+      ? homeLabStatus.completed.subgreeting
+      : pending
+        ? homeLabStatus.pending.subgreeting
+        : preparing
+          ? homeLabStatus.approved.subgreeting
+          : homeLabStatus.explorer.subgreeting;
+
+  const insight = active
+    ? {
+        title: `${homeLabStatus.active.title} — ${membership.labName ?? starterLab.name}`,
+        body: `Day ${day} of ${totalDays}. ${
+          nextTask ? `Next up: ${nextTask.title}.` : "Today’s plan is complete."
+        }`,
+        cta: `${activeHome.todayTitle} — ${dailyDone}/${dailyTotal}`,
+        onPress: () => router.push("/labs/progress"),
+      }
+    : completed
+      ? {
+          title: homeLabStatus.completed.title,
+          body: homeLabStatus.completed.body,
+          cta: homeLabStatus.completed.cta,
+          onPress: () => router.push("/labs/results"),
+        }
+      : pending
+        ? {
+            title: homeLabStatus.pending.title,
+            body: homeLabStatus.pending.body,
+            cta: homeLabStatus.pending.cta,
+            onPress: () => router.push("/labs/submitted"),
+          }
+        : preparing
+          ? allDone
+            ? {
+                title: homeLabStatus.approved.readyTitle,
+                body: `${countdown} ${homeLabStatus.approved.readyBody}`,
+                cta: canStart ? "Start Starter Lab" : `Starts ${startLabel || "Monday"}`,
+                onPress: () => {
+                  if (canStart) startStarterLab();
+                },
+              }
+            : {
+                title: homeLabStatus.approved.title,
+                body: `${countdown} Open My Lab to check items off over time.`,
+                cta: prepDone > 0 ? homeLabStatus.approved.continueCta : homeLabStatus.approved.cta,
+                onPress: openPrep,
+              }
+          : {
+              title: homeLabStatus.explorer.title,
+              body: homeLabStatus.explorer.body,
+              cta: homeLabStatus.explorer.cta,
+              onPress: () => router.push("/labs"),
+            };
 
   return (
     <View style={styles.root}>
-      <View style={styles.intro}>
-        <Text style={styles.greeting} numberOfLines={1} maxFontSizeMultiplier={1.2}>
-          {greetingFor(profile.user.name)}
-        </Text>
-        <Text style={styles.subgreeting} maxFontSizeMultiplier={1.3}>
-          {copy.subgreeting}
-        </Text>
-      </View>
+      <HomeGreeting subgreeting={subgreeting} />
 
-      <HomeHeroChart />
+      {pending ? (
+        <PrepHero variant="pending" onPress={() => router.push("/labs/submitted")} />
+      ) : preparing ? (
+        <PrepHero
+          done={prepDone}
+          total={prepTotal}
+          startIso={membership.startDate}
+          ready={allDone}
+          onPress={openPrep}
+        />
+      ) : completed ? (
+        <CompletedHero onPress={() => router.push("/labs/results")} />
+      ) : (
+        <HomeHeroChart mode={active ? "lab" : "baseline"} />
+      )}
 
       <InsightCard
-        title={copy.heading}
-        body={copy.labBody}
-        cta={copy.viewLabs}
-        onPress={() => router.push("/labs")}
+        title={insight.title}
+        body={insight.body}
+        cta={insight.cta}
+        ctaLayout="stack"
+        onPress={insight.onPress}
       />
 
       <View style={styles.block}>
@@ -66,43 +149,60 @@ export default function ExplorerHomeContent() {
             </Text>
           </Pressable>
         </View>
-          <LabHeroCard
-          photo={starterLab.photo}
-          title={starterLab.name}
-          meta={starterLab.meta}
-          pitch={starterLab.pitch}
-          badge="Start here"
-          badgeAccent
-          compact
-          outlined
-          onPress={() => openLab(starterLab.id)}
-        />
+        {enrolled
+          ? comingSoonLabs.map((offer) => (
+              <LabHeroCard
+                key={offer.id}
+                photo={offer.photo}
+                title={offer.name}
+                meta={offer.meta}
+                pitch={offer.pitch ?? offer.description}
+                badge={offer.badge}
+                compact
+                onPress={() => openLab(offer.id)}
+              />
+            ))
+          : (
+              <LabHeroCard
+                photo={starterLab.photo}
+                title={starterLab.name}
+                meta={starterLab.meta}
+                pitch={pending ? homeLabStatus.pending.pitch : starterLab.pitch}
+                badge={pending ? homeLabStatus.pending.badge : "Start here"}
+                badgeAccent={!pending}
+                compact
+                outlined
+                onPress={() => (pending ? router.push("/labs/submitted") : openLab(starterLab.id))}
+              />
+            )}
       </View>
 
-      <View style={styles.block}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={copy.moreLabel}
-          hitSlop={8}
-          onPress={() => router.push("/labs")}
-        >
-          <Text style={typography.caption} maxFontSizeMultiplier={1.3}>
-            {copy.moreLabel}
-          </Text>
-        </Pressable>
-        {comingSoonLabs.map((offer) => (
-          <LabHeroCard
-            key={offer.id}
-            photo={offer.photo}
-            title={offer.name}
-            meta={offer.meta}
-            pitch={offer.pitch ?? offer.description}
-            badge={offer.badge}
-            compact
-            onPress={() => openLab(offer.id)}
-          />
-        ))}
-      </View>
+      {enrolled ? null : (
+        <View style={styles.block}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={copy.moreLabel}
+            hitSlop={8}
+            onPress={() => router.push("/labs")}
+          >
+            <Text style={typography.caption} maxFontSizeMultiplier={1.3}>
+              {copy.moreLabel}
+            </Text>
+          </Pressable>
+          {comingSoonLabs.map((offer) => (
+            <LabHeroCard
+              key={offer.id}
+              photo={offer.photo}
+              title={offer.name}
+              meta={offer.meta}
+              pitch={offer.pitch ?? offer.description}
+              badge={offer.badge}
+              compact
+              onPress={() => openLab(offer.id)}
+            />
+          ))}
+        </View>
+      )}
     </View>
   );
 }
@@ -110,23 +210,6 @@ export default function ExplorerHomeContent() {
 const styles = StyleSheet.create({
   root: {
     gap: layout.sectionGap,
-  },
-  intro: {
-    marginBottom: -spacing.sm,
-  },
-  greeting: {
-    fontSize: 24,
-    lineHeight: 30,
-    fontWeight: "700",
-    color: colors.white,
-    letterSpacing: -0.3,
-  },
-  subgreeting: {
-    marginTop: 4,
-    marginBottom: 14,
-    fontSize: 14,
-    lineHeight: 20,
-    color: "#AEAEB2",
   },
   block: {
     gap: spacing.sm,

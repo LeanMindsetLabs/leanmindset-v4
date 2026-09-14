@@ -124,8 +124,12 @@ const HAS_ACCOUNT_KEY = "lm-has-account";
 const PENDING_EMAIL_KEY = "lm-pending-email";
 const FIRST_TIME_FLOW_KEY = "lm-first-time-flow";
 
-/** Mock OTP — any 6 digits accepted until a real email backend is wired. */
+/** Preview OTP shown on-screen — no email is sent until a real backend is wired. */
 export const MOCK_OTP_CODE = "123456";
+
+export function isValidEmail(value: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
 
 export const defaultUser: ProfileUser = {
   id: "mani-a",
@@ -183,11 +187,11 @@ export const defaultProfile: ProfileState = {
   appleHealthConnected: false,
   preferences: {
     notifications: true,
-    units: "kg",
+    units: "lb",
     shareProgress: false,
     darkMode: true,
-    heightUnit: "cm",
-    temperatureUnit: "c",
+    heightUnit: "in",
+    temperatureUnit: "f",
     coachingReminders: true,
     workoutReminders: true,
     mealReminders: false,
@@ -420,7 +424,7 @@ export function subscribeProfile(fn: () => void) {
 
 export function requestEmailOtp(email: string) {
   const trimmed = email.trim();
-  if (!trimmed.includes("@")) return null;
+  if (!isValidEmail(trimmed)) return null;
   setPendingEmail(trimmed);
   return trimmed;
 }

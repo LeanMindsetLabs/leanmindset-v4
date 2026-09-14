@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { completeOtpLogin, getProfile, getPendingEmail, verifyOtpCode } from "@/src/services/profileService";
+import { completeOtpLogin, getProfile, getPendingEmail, MOCK_OTP_CODE, verifyOtpCode } from "@/src/services/profileService";
 import { colors } from "@/src/theme/colors";
 import { layout } from "@/src/theme/layout";
 import { radius } from "@/src/theme/radius";
@@ -17,7 +17,7 @@ const RESEND_SECONDS = 28;
 export default function OtpScreen() {
   const insets = useSafeAreaInsets();
   const params = useLocalSearchParams<{ email?: string; firstTime?: string }>();
-  const email = params.email || getPendingEmail() || "youremail@example.com";
+  const email = params.email || getPendingEmail() || "your email";
   const firstTime = params.firstTime === "1";
   const [digits, setDigits] = useState<string[]>(["", "", "", "", "", ""]);
   const [secondsLeft, setSecondsLeft] = useState(RESEND_SECONDS);
@@ -59,7 +59,7 @@ export default function OtpScreen() {
   }
 
   function fillFromAutofill() {
-    setDigits(["5", "9", "7", "7", "2", "1"]);
+    setDigits(MOCK_OTP_CODE.split(""));
   }
 
   function resend() {
@@ -82,9 +82,20 @@ export default function OtpScreen() {
         <View style={styles.content}>
           <Text style={styles.title}>Enter the OTP</Text>
           <Text style={styles.subtitle}>
-            We&apos;ve sent a 6-digit code to{"\n"}
-            {email}
+            Nothing is emailed in this preview.{"\n"}
+            Use this code for {email}
           </Text>
+
+          <Pressable
+            onPress={fillFromAutofill}
+            accessibilityRole="button"
+            accessibilityLabel={`Use preview code ${MOCK_OTP_CODE}`}
+            style={({ pressed }) => [styles.previewCode, pressed && styles.pressed]}
+          >
+            <Text style={styles.previewKicker}>Preview code</Text>
+            <Text style={styles.previewDigits}>{MOCK_OTP_CODE}</Text>
+            <Text style={styles.previewHint}>Tap to fill</Text>
+          </Pressable>
 
           <View style={styles.otpRow}>
             {digits.map((digit, index) => {
@@ -117,7 +128,7 @@ export default function OtpScreen() {
         <OtpKeypad
           onDigit={pushDigit}
           onBackspace={backspace}
-          autofillCode="597721"
+          autofillCode={MOCK_OTP_CODE}
           onAutofill={fillFromAutofill}
         />
       </View>
@@ -153,6 +164,36 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: colors.white,
     textAlign: "center",
+  },
+  previewCode: {
+    alignItems: "center",
+    gap: 4,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    borderRadius: radius.lg,
+    borderWidth: 1.5,
+    borderColor: GOLD,
+    backgroundColor: "rgba(10,12,14,0.72)",
+    minWidth: 220,
+  },
+  pressed: { opacity: 0.9 },
+  previewKicker: {
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    color: GOLD,
+  },
+  previewDigits: {
+    fontSize: 28,
+    lineHeight: 34,
+    fontWeight: "700",
+    letterSpacing: 6,
+    color: colors.white,
+  },
+  previewHint: {
+    fontSize: 12,
+    color: colors.textSecondary,
   },
   otpRow: {
     flexDirection: "row",

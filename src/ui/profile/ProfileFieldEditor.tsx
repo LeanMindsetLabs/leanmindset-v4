@@ -154,8 +154,8 @@ export default function ProfileFieldEditor({ field, onClose }: ProfileFieldEdito
       <View style={styles.body}>
         {field === "name" ? (
           <View style={styles.stack}>
-            <LabeledInput label="First Name" value={first} onChangeText={setFirst} />
-            <LabeledInput label="Last Name" value={last} onChangeText={setLast} />
+            <LabeledInput label="First Name" value={first} onChangeText={setFirst} placeholder="Your first name" />
+            <LabeledInput label="Last Name" value={last} onChangeText={setLast} placeholder="Your last name" />
             <Text style={styles.hint}>This is how your name will appear across LeanMindset.</Text>
           </View>
         ) : null}
@@ -166,6 +166,7 @@ export default function ProfileFieldEditor({ field, onClose }: ProfileFieldEdito
               label="Email Address"
               value={email}
               onChangeText={setEmail}
+              placeholder="Your email"
               keyboardType="email-address"
               autoCapitalize="none"
             />
@@ -260,12 +261,14 @@ function LabeledInput({
   onChangeText,
   keyboardType,
   autoCapitalize,
+  placeholder,
 }: {
   label: string;
   value: string;
   onChangeText: (next: string) => void;
   keyboardType?: "email-address" | "default";
   autoCapitalize?: "none" | "words";
+  placeholder?: string;
 }) {
   return (
     <View style={styles.field}>
@@ -275,6 +278,7 @@ function LabeledInput({
         onChangeText={onChangeText}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize ?? "words"}
+        placeholder={placeholder}
         placeholderTextColor={colors.textMuted}
         style={styles.input}
       />

@@ -2,20 +2,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { type Href, router } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useLabMembership } from "@/src/hooks/useLabMembership";
 import { useProfile } from "@/src/hooks/useProfile";
-import ActiveHomeContent from "@/src/screens/home/ActiveHomeContent";
-import CompletedHomeContent from "@/src/screens/home/CompletedHomeContent";
 import ExplorerHomeContent from "@/src/screens/home/ExplorerHomeContent";
-import PendingHomeContent from "@/src/screens/home/PendingHomeContent";
-import PrepHomeContent from "@/src/screens/home/PrepHomeContent";
 import { colors } from "@/src/theme/colors";
 import { layout } from "@/src/theme/layout";
 import { LeanMindsetWordmark } from "@/src/ui/LeanMindsetBrand";
 
 export default function HomeScreen() {
   const { profile } = useProfile();
-  const { membership } = useLabMembership();
 
   return (
     <SafeAreaView edges={["top"]} style={styles.screen}>
@@ -36,13 +30,9 @@ export default function HomeScreen() {
             <Ionicons name="notifications-outline" size={22} color={colors.white} />
           </Pressable>
           <LeanMindsetWordmark size={20} style={styles.greetBrand} />
-          <Avatar initial={profile.user.initial} />
+          <Avatar initial={profile.user?.initial || "S"} />
         </View>
-        {membership.lifecycle === "explorer" ? <ExplorerHomeContent /> : null}
-        {membership.lifecycle === "requested" ? <PendingHomeContent /> : null}
-        {membership.lifecycle === "approved_preparing" ? <PrepHomeContent /> : null}
-        {membership.lifecycle === "active" ? <ActiveHomeContent /> : null}
-        {membership.lifecycle === "completed" ? <CompletedHomeContent /> : null}
+        <ExplorerHomeContent />
       </ScrollView>
     </SafeAreaView>
   );

@@ -29,7 +29,7 @@ export function OverlayHost() {
   const keyboardHeight = useKeyboardHeight();
   if (!overlay) return null;
   return (
-    <View pointerEvents="box-none" style={[styles.host, keyboardHeight > 0 ? { bottom: keyboardHeight } : null]}>
+    <View pointerEvents="auto" style={[styles.host, keyboardHeight > 0 ? { bottom: keyboardHeight } : null]}>
       {overlay}
     </View>
   );
@@ -43,8 +43,11 @@ type InPhoneModalProps = {
 export function InPhoneModal({ visible, children }: InPhoneModalProps) {
   useLayoutEffect(() => {
     setOverlay(visible ? children : null);
-    return () => setOverlay(null);
   }, [visible, children]);
+
+  useLayoutEffect(() => {
+    return () => setOverlay(null);
+  }, []);
 
   return null;
 }

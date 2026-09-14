@@ -5,7 +5,7 @@ import { demoSetLifecycle } from "@/src/services/labMembershipService";
 import UiVariantToggle from "@/src/ui/UiVariantToggle";
 
 export default function PreviewToggles() {
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "";
   const { previewRoute, checkInPicker, setCheckInPicker } = useUiVariant();
   const { membership } = useLabMembership();
 

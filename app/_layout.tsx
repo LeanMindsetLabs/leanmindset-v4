@@ -41,7 +41,7 @@ const navTheme = {
 
 export default function RootLayout() {
   const [ready, setReady] = useState(false);
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "";
   const isLegal = pathname.startsWith("/legal");
 
   useEffect(() => {
@@ -49,20 +49,33 @@ export default function RootLayout() {
       document.title = "LeanMindset";
     }
     installWebInputFocusReset();
+    let cancelled = false;
+    const finish = () => {
+      if (cancelled) return;
+      setReady(true);
+      void SplashScreen.hideAsync();
+    };
+    const cap = setTimeout(finish, 2500);
     void Promise.all([
       Font.loadAsync({
         ...Ionicons.font,
         ...MaterialCommunityIcons.font,
       }).catch(() => undefined),
-      hydrateStorage().then(() => {
-        rehydrateProfile();
-        rehydrateCoachThread();
-        rehydrateLabMembership();
-      }),
+      hydrateStorage()
+        .then(() => {
+          rehydrateProfile();
+          rehydrateCoachThread();
+          rehydrateLabMembership();
+        })
+        .catch(() => undefined),
     ]).finally(() => {
-      setReady(true);
-      void SplashScreen.hideAsync();
+      clearTimeout(cap);
+      finish();
     });
+    return () => {
+      cancelled = true;
+      clearTimeout(cap);
+    };
   }, []);
 
   if (isLegal) {

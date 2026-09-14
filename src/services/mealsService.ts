@@ -1,3 +1,4 @@
+import { prepGroceryItems } from "@/src/content/prepResources";
 import type { MealLogId } from "./mealsLogService";
 
 export type Macro = {
@@ -29,30 +30,16 @@ export type GroceryItem = {
   id: string;
   name: string;
   aisle: string;
-  quantity: string;
+  quantity?: string;
   checked: boolean;
 };
 
-export const groceryPreviewNames = [
-  "Chicken",
-  "Yogurt",
-  "Spinach",
-  "Oats",
-  "Berries",
-];
+export const groceryPreviewNames = ["Chicken breast", "Eggs", "Greek yogurt", "Spinach", "Broccoli"];
 
-export const groceryItems: GroceryItem[] = [
-  { id: "chicken", name: "Chicken breast", aisle: "Protein", quantity: "1.5 lb", checked: false },
-  { id: "yogurt", name: "Greek yogurt", aisle: "Dairy", quantity: "32 oz", checked: false },
-  { id: "tofu", name: "Firm tofu", aisle: "Protein", quantity: "14 oz", checked: false },
-  { id: "spinach", name: "Spinach", aisle: "Produce", quantity: "1 bag", checked: false },
-  { id: "broccoli", name: "Broccoli", aisle: "Produce", quantity: "2 heads", checked: false },
-  { id: "peppers", name: "Bell peppers", aisle: "Produce", quantity: "3", checked: false },
-  { id: "berries", name: "Mixed berries", aisle: "Produce", quantity: "1 pint", checked: false },
-  { id: "oats", name: "Rolled oats", aisle: "Pantry", quantity: "18 oz", checked: false },
-  { id: "rice", name: "Rice", aisle: "Pantry", quantity: "1 bag", checked: false },
-  { id: "oil", name: "Olive oil", aisle: "Pantry", quantity: "1 bottle", checked: false },
-];
+export const groceryItems: GroceryItem[] = prepGroceryItems.map((item) => ({
+  ...item,
+  checked: false,
+}));
 
 export const defaultNutrition: Nutrition = {
   kcalLogged: 1600,

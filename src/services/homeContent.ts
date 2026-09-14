@@ -68,7 +68,7 @@ export const homeContent = {
   explorer: {
     heading: "Find your Lean Lab",
     labBody: "Personalized 30-day labs for nutrition, training, and the habits that last.",
-    recommendedLabel: "Recommended for you",
+    recommendedLabel: "Recommended Labs for you",
     moreLabel: "More Labs",
     seeAll: "See all",
     viewLabs: "View Labs",

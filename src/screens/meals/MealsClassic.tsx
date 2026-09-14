@@ -190,7 +190,6 @@ export default function MealsClassic({ onAskCoach }: Props) {
                   {item.checked ? <Text style={styles.checkMark}>✓</Text> : null}
                 </View>
                 <Text style={[styles.groceryName, item.checked && styles.struck]}>{item.name}</Text>
-                <Text style={[styles.groceryQty, item.checked && styles.struck]}>{item.quantity}</Text>
               </Pressable>
             ))}
           </View>

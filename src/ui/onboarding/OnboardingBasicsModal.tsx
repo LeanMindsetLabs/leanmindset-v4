@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ALL_GENDERS } from "@/src/content/onboarding";
-import { range } from "@/src/lib/onboardingMath";
+import { heightDraftFromCm, heightDraftToCm, heightMarks, range } from "@/src/lib/onboardingMath";
 import { InPhoneModal } from "@/src/layout/PhoneOverlay";
 import { colors } from "@/src/theme/colors";
 import { layout } from "@/src/theme/layout";
@@ -44,20 +44,15 @@ export default function OnboardingBasicsModal({
   const insets = useSafeAreaInsets();
   const [draftGender, setDraftGender] = useState(gender);
   const [draftAge, setDraftAge] = useState(String(age));
-  const [draftHeightUnit, setDraftHeightUnit] = useState(heightUnit);
-  const [draftHeight, setDraftHeight] = useState(
-    heightUnit === "cm" ? String(Math.round(heightCm)) : String(Math.round(heightCm / 2.54)),
-  );
+  const [draftHeightUnit, setDraftHeightUnit] = useState<"cm" | "in">(heightUnit);
+  const [draftHeight, setDraftHeight] = useState(heightDraftFromCm(heightCm, heightUnit));
   const [draftWeightUnit, setDraftWeightUnit] = useState(weightUnit);
   const [draftWeight, setDraftWeight] = useState(
     weightUnit === "kg" ? String(Math.round(weightKg)) : String(Math.round(weightKg * 2.2046)),
   );
 
   const ages = useMemo(() => range(18, 80).map(String), []);
-  const heights = useMemo(
-    () => (draftHeightUnit === "cm" ? range(140, 210) : range(54, 84)).map(String),
-    [draftHeightUnit],
-  );
+  const heights = useMemo(() => heightMarks(draftHeightUnit), [draftHeightUnit]);
   const weights = useMemo(
     () => (draftWeightUnit === "kg" ? range(40, 160) : range(90, 360)).map(String),
     [draftWeightUnit],
@@ -68,7 +63,7 @@ export default function OnboardingBasicsModal({
     setDraftGender(gender);
     setDraftAge(String(age));
     setDraftHeightUnit(heightUnit);
-    setDraftHeight(heightUnit === "cm" ? String(Math.round(heightCm)) : String(Math.round(heightCm / 2.54)));
+    setDraftHeight(heightDraftFromCm(heightCm, heightUnit));
     setDraftWeightUnit(weightUnit);
     setDraftWeight(weightUnit === "kg" ? String(Math.round(weightKg)) : String(Math.round(weightKg * 2.2046)));
   }, [modal, gender, age, heightCm, heightUnit, weightKg, weightUnit]);
@@ -80,12 +75,25 @@ export default function OnboardingBasicsModal({
     weight: "Current weight",
   };
 
+  function changeHeightUnit(next: "cm" | "in") {
+    if (next === draftHeightUnit) return;
+    const cm = heightDraftToCm(draftHeight, draftHeightUnit);
+    setDraftHeightUnit(next);
+    setDraftHeight(heightDraftFromCm(cm, next));
+  }
+
+  function changeWeightUnit(next: "kg" | "lb") {
+    if (next === draftWeightUnit) return;
+    const kg = draftWeightUnit === "kg" ? Number(draftWeight) : Number(draftWeight) / 2.2046;
+    setDraftWeightUnit(next);
+    setDraftWeight(next === "kg" ? String(Math.round(kg)) : String(Math.round(kg * 2.2046)));
+  }
+
   function save() {
     if (modal === "gender") onSaveGender(draftGender);
     if (modal === "age") onSaveAge(Number(draftAge));
     if (modal === "height") {
-      const numeric = Number(draftHeight);
-      onSaveHeight(draftHeightUnit === "cm" ? numeric : numeric * 2.54, draftHeightUnit);
+      onSaveHeight(heightDraftToCm(draftHeight, draftHeightUnit), draftHeightUnit);
     }
     if (modal === "weight") {
       const numeric = Number(draftWeight);
@@ -96,8 +104,9 @@ export default function OnboardingBasicsModal({
 
   return (
     <InPhoneModal visible={modal !== null}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 12) }]} onPress={(event) => event.stopPropagation()}>
+      <View style={styles.backdrop}>
+        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Dismiss" />
+        <View style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 12) }]} pointerEvents="auto">
           <Text style={styles.title}>{modal ? titles[modal] : ""}</Text>
 
           {modal === "gender" ? (
@@ -115,24 +124,28 @@ export default function OnboardingBasicsModal({
 
           {modal === "age" ? (
             <View style={styles.wheelBox}>
-              <OnboardingWheel values={ages} value={draftAge} onChange={setDraftAge} />
+              <OnboardingWheel key="age" values={ages} value={draftAge} onChange={setDraftAge} />
             </View>
           ) : null}
 
           {modal === "height" ? (
             <View style={styles.wheelBlock}>
-              <UnitToggle options={["cm", "ft"]} value={draftHeightUnit === "cm" ? "cm" : "ft"} onChange={(next) => setDraftHeightUnit(next === "cm" ? "cm" : "in")} />
+              <UnitToggle
+                options={["cm", "ft"]}
+                value={draftHeightUnit === "cm" ? "cm" : "ft"}
+                onChange={(next) => changeHeightUnit(next === "cm" ? "cm" : "in")}
+              />
               <View style={styles.wheelBox}>
-                <OnboardingWheel values={heights} value={draftHeight} onChange={setDraftHeight} />
+                <OnboardingWheel key={draftHeightUnit} values={heights} value={draftHeight} onChange={setDraftHeight} />
               </View>
             </View>
           ) : null}
 
           {modal === "weight" ? (
             <View style={styles.wheelBlock}>
-              <UnitToggle options={["kg", "lbs"]} value={draftWeightUnit === "kg" ? "kg" : "lbs"} onChange={(next) => setDraftWeightUnit(next === "kg" ? "kg" : "lb")} />
+              <UnitToggle options={["kg", "lbs"]} value={draftWeightUnit === "kg" ? "kg" : "lbs"} onChange={(next) => changeWeightUnit(next === "kg" ? "kg" : "lb")} />
               <View style={styles.wheelBox}>
-                <OnboardingWheel values={weights} value={draftWeight} onChange={setDraftWeight} />
+                <OnboardingWheel key={draftWeightUnit} values={weights} value={draftWeight} onChange={setDraftWeight} />
               </View>
             </View>
           ) : null}
@@ -145,8 +158,8 @@ export default function OnboardingBasicsModal({
               <Text style={styles.done}>Done</Text>
             </Pressable>
           </View>
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </InPhoneModal>
   );
 }

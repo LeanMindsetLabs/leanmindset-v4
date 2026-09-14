@@ -49,6 +49,7 @@ export default function LabHeroCard({
         pointerEvents="none"
         style={[styles.photo, outlined && Platform.OS === "web" ? styles.photoMuted : null]}
         contentFit="cover"
+        contentPosition={photo === "starter" ? { top: "38%", left: "28%" } : "center"}
       />
       {outlined ? <View style={styles.photoDim} pointerEvents="none" /> : null}
       <LinearGradient

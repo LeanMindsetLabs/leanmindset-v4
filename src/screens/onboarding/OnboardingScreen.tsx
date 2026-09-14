@@ -61,7 +61,7 @@ export default function OnboardingScreen() {
   const [gender, setGender] = useState(profile.user.gender || "Male");
   const [age, setAge] = useState(30);
   const [heightCm, setHeightCm] = useState(profile.user.heightCm || 175);
-  const [heightUnit, setHeightUnit] = useState<"cm" | "in">(profile.preferences.heightUnit);
+  const [heightUnit, setHeightUnit] = useState<"cm" | "in">("in");
   const [weightKg, setWeightKg] = useState(Math.round(lbToKg(profile.weightLb) * 10) / 10 || 64);
   const [weightUnit, setWeightUnit] = useState<"kg" | "lb">(profile.preferences.units);
   const [goalType, setGoalType] = useState<GoalType>(profile.goalType ?? "lose");
@@ -69,7 +69,7 @@ export default function OnboardingScreen() {
   const [activity, setActivity] = useState<ActivityLevel>(profile.activityLevel ?? "moderate");
   const [experience, setExperience] = useState<WorkoutExperience>(profile.workoutExperience ?? "returning");
   const [conditions, setConditions] = useState<string[]>([]);
-  const [displayName, setDisplayName] = useState(profile.user.name);
+  const [displayName, setDisplayName] = useState("");
   const [modal, setModal] = useState<BasicsModal>(null);
 
   const stepId = STEPS[Math.min(step, STEPS.length - 1)];
@@ -144,7 +144,12 @@ export default function OnboardingScreen() {
           </View>
         )}
 
-        <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.body}
+          contentContainerStyle={styles.bodyContent}
+          showsVerticalScrollIndicator={false}
+          scrollEnabled={modal === null}
+        >
           {renderStep()}
         </ScrollView>
 
@@ -200,7 +205,8 @@ export default function OnboardingScreen() {
           <AppTextInput
             value={displayName}
             onChangeText={setDisplayName}
-            placeholder="Sakai"
+            accessibilityLabel="Your name"
+            placeholder="Your name"
             placeholderTextColor={colors.textSecondary}
             autoCapitalize="words"
             autoCorrect={false}

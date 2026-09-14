@@ -15,7 +15,7 @@ export const IPHONE_15 = {
 
 export default function WebPhonePreview({ children }: { children: ReactNode }) {
   const { width, height } = useWindowDimensions();
-  const pathname = usePathname();
+  const pathname = usePathname() ?? "";
   const isAdmin = pathname.startsWith("/admin");
   const heroBleed = /^\/labs\/(starter|lean-reset|transformation)/.test(pathname);
 
@@ -25,7 +25,9 @@ export default function WebPhonePreview({ children }: { children: ReactNode }) {
     return <>{children}</>;
   }
 
-  const scale = Math.min(1, (width - 48) / 430, (height - 72) / 920);
+  const readyW = width > 80 ? width : 430;
+  const readyH = height > 80 ? height : 920;
+  const scale = Math.max(0.45, Math.min(1, (readyW - 48) / 430, (readyH - 72) / 920));
 
   return (
     <View style={styles.stage}>

@@ -3,7 +3,7 @@ import { useLocalSearchParams, router } from "expo-router";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { requestEmailOtp, setFirstTimeFlow } from "@/src/services/profileService";
+import { isValidEmail, requestEmailOtp, setFirstTimeFlow } from "@/src/services/profileService";
 import { colors } from "@/src/theme/colors";
 import { layout } from "@/src/theme/layout";
 import { radius } from "@/src/theme/radius";
@@ -22,12 +22,22 @@ export default function EmailLoginScreen() {
   const firstTime = params.firstTime === "1";
   const [email, setEmail] = useState("");
   const [focused, setFocused] = useState(false);
+  const [error, setError] = useState("");
 
   function submit() {
-    const trimmed = requestEmailOtp(email);
-    if (!trimmed) return;
+    const trimmed = email.trim();
+    if (!isValidEmail(trimmed)) {
+      setError("Enter a valid email, like you@example.com.");
+      return;
+    }
+    const issued = requestEmailOtp(trimmed);
+    if (!issued) {
+      setError("Enter a valid email, like you@example.com.");
+      return;
+    }
+    setError("");
     if (firstTime) setFirstTimeFlow(true);
-    router.push({ pathname: "/otp", params: { email: trimmed, firstTime: firstTime ? "1" : "0" } });
+    router.push({ pathname: "/otp", params: { email: issued, firstTime: firstTime ? "1" : "0" } });
   }
 
   return (
@@ -48,7 +58,7 @@ export default function EmailLoginScreen() {
           <AuthBrandHeader />
           <Text style={styles.title}>{firstTime ? "Create your account" : "Welcome back"}</Text>
           <Text style={styles.subtitle}>
-            {firstTime ? "Enter your email to get started." : "Log in to continue your lean journey."}
+            Enter your email. A preview code appears next — nothing is emailed yet.
           </Text>
 
           <View style={styles.fieldBlock}>
@@ -57,10 +67,14 @@ export default function EmailLoginScreen() {
               <Ionicons name="mail-outline" size={18} color={colors.textSecondary} />
               <AppTextInput
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={(value) => {
+                  setEmail(value);
+                  if (error) setError("");
+                }}
                 onFocus={() => setFocused(true)}
                 onBlur={() => setFocused(false)}
-                placeholder="youremail@example.com"
+                accessibilityLabel="Your email"
+                placeholder="Your email"
                 placeholderTextColor={colors.textSecondary}
                 keyboardType="email-address"
                 autoCapitalize="none"
@@ -68,6 +82,11 @@ export default function EmailLoginScreen() {
                 style={styles.input}
               />
             </View>
+            {error ? (
+              <Text style={styles.error} maxFontSizeMultiplier={1.3}>
+                {error}
+              </Text>
+            ) : null}
           </View>
 
           <Pressable onPress={submit} accessibilityRole="button" style={({ pressed }) => [styles.cta, pressed && styles.pressed]}>
@@ -143,6 +162,7 @@ const styles = StyleSheet.create({
   },
   fieldBlock: { gap: 8 },
   label: { fontSize: 13, color: colors.white, fontWeight: "500" },
+  error: { fontSize: 13, lineHeight: 18, color: colors.danger, fontWeight: "500" },
   inputWrap: {
     minHeight: 52,
     borderRadius: 12,

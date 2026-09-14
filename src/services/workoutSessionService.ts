@@ -7,6 +7,7 @@ import {
   type TrainingDay,
   type WorkoutSession,
 } from "./trainService";
+import { completeDailyTask } from "./labMembershipService";
 
 export type WorkoutRuntime = {
   session: WorkoutSession;
@@ -143,6 +144,7 @@ export function finishWorkout() {
     session: { ...runtime.session, completed: true, inProgress: false },
     week: completeToday(runtime.week),
   });
+  completeDailyTask("train");
 }
 
 export function markWorkoutDone() {

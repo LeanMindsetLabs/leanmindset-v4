@@ -2,6 +2,7 @@ import { type Href, router } from "expo-router";
 import { StyleSheet, Text, View } from "react-native";
 import { pendingHome } from "@/src/content/labs";
 import { useLabMembership } from "@/src/hooks/useLabMembership";
+import { displayStoredDate } from "@/src/lib/cohortStart";
 import { colors } from "@/src/theme/colors";
 import { spacing } from "@/src/theme/spacing";
 import { typography } from "@/src/theme/typography";
@@ -23,7 +24,7 @@ export default function PendingHomeContent() {
       <LabCard>
         <Text style={typography.body} maxFontSizeMultiplier={1.4}>
           {membership.requestedAt
-            ? `${pendingHome.body} Submitted ${membership.requestedAt}.`
+            ? `${pendingHome.body} Submitted ${displayStoredDate(membership.requestedAt)}.`
             : pendingHome.body}
         </Text>
         <BlueCta label={pendingHome.statusCta} onPress={() => router.push("/labs/submitted")} />

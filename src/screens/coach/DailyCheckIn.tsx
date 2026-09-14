@@ -8,6 +8,7 @@ import { useUiVariant } from "@/src/context/UiVariantContext";
 import AppScreen from "@/src/layout/AppScreen";
 import { useKeyboardHeight } from "@/src/hooks/useKeyboardHeight";
 import { formatCheckInMessage } from "@/src/services/coachService";
+import { completeDailyTask } from "@/src/services/labMembershipService";
 import { getProfile } from "@/src/services/profileService";
 import { colors } from "@/src/theme/colors";
 import { layout } from "@/src/theme/layout";
@@ -89,6 +90,7 @@ export default function DailyCheckIn() {
 
   function sendCheckIn() {
     if (!summary) return;
+    completeDailyTask("checkin");
     setPendingCoachMessage(summary);
     router.push("/(tabs)/coach");
   }

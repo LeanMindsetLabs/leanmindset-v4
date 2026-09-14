@@ -49,6 +49,7 @@ export function trainPhoto(src: string) {
 export const labPhotos = {
   explorerHero: require("../../assets/images/onboarding-hero.png"),
   starter: require("../../assets/labs/lab-starter.png"),
+  stairs: require("../../assets/labs/lab-starter-stairs.png"),
   "lean-reset": require("../../assets/labs/lab-executive.jpg"),
   transformation: require("../../assets/labs/lab-bikini.jpg"),
 } as const;

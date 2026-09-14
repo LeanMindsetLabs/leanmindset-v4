@@ -1,5 +1,14 @@
+import { planForDay, STARTER_TOTAL_DAYS } from "@/src/content/starterProgram";
+import {
+  canStartLab,
+  cohortStartMonday,
+  displayStoredDate,
+  isoDate,
+  programDayNumber,
+  rollMissedMonday,
+} from "@/src/lib/cohortStart";
 import { appStorage } from "@/src/lib/storage";
-import type { LabDailyTask, LabLifecycleState, LabMembership, LabPreparationTask } from "@/src/types";
+import type { LabLifecycleState, LabMembership, LabPrepChecklist, LabPreparationTask } from "@/src/types";
 
 const STORAGE_KEY = "lab.membership";
 
@@ -13,13 +22,19 @@ export const STARTER_PREP_TASKS: LabPreparationTask[] = [
   { id: "guide", title: "Program guide", complete: false },
 ];
 
-export const STARTER_DAILY_TASKS: LabDailyTask[] = [
-  { id: "breakfast", title: "Log breakfast", meta: "Protein-focused", complete: false },
-  { id: "lunch", title: "Log lunch", meta: "Balanced plate", complete: false },
-  { id: "dinner", title: "Log dinner", meta: "High protein", complete: false },
-  { id: "train", title: "Walk + Core A", meta: "25 min · Beginner", complete: false },
-  { id: "checkin", title: "Evening check-in", meta: "Weight · reflection", complete: false },
-];
+export const EMPTY_PREP_CHECKLIST: LabPrepChecklist = {
+  groceryChecked: [],
+  supplementChecked: [],
+  photos: [],
+};
+
+function cloneChecklist(source?: LabPrepChecklist | null): LabPrepChecklist {
+  return {
+    groceryChecked: [...(source?.groceryChecked ?? [])],
+    supplementChecked: [...(source?.supplementChecked ?? [])],
+    photos: [...(source?.photos ?? [])],
+  };
+}
 
 export const EXPLORER_MEMBERSHIP: LabMembership = {
   lifecycle: "explorer",
@@ -30,7 +45,11 @@ export const EXPLORER_MEMBERSHIP: LabMembership = {
   requestedAt: null,
   approvedAt: null,
   welcomeDismissed: false,
+  offMondayStartGranted: false,
+  programStartedOn: null,
+  activeDayKey: null,
   preparationTasks: [],
+  prepChecklist: cloneChecklist(),
   dailyTasks: [],
   checkIn: null,
   progress: null,
@@ -57,17 +76,14 @@ function apply(next: LabMembership) {
   notify();
 }
 
-function formatDate(date = new Date()) {
-  return date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-}
-
-function startDateLabel() {
-  const date = new Date();
-  date.setDate(date.getDate() + 2);
-  return formatDate(date);
+function todayIso() {
+  return isoDate();
 }
 
 export function getLabMembership(): LabMembership {
+  if (!membership.prepChecklist) {
+    membership = { ...membership, prepChecklist: cloneChecklist() };
+  }
   return membership;
 }
 
@@ -78,20 +94,28 @@ export function subscribeLabMembership(listener: () => void) {
   };
 }
 
+function normalizeMembership(parsed: Partial<LabMembership>): LabMembership {
+  return {
+    ...EXPLORER_MEMBERSHIP,
+    ...parsed,
+    offMondayStartGranted: parsed.offMondayStartGranted === true,
+    programStartedOn: parsed.programStartedOn ?? null,
+    activeDayKey: parsed.activeDayKey ?? null,
+    preparationTasks: parsed.preparationTasks ?? [],
+    prepChecklist: cloneChecklist(parsed.prepChecklist),
+    dailyTasks: parsed.dailyTasks ?? [],
+  };
+}
+
 export function rehydrateLabMembership() {
   const raw = appStorage.getItem(STORAGE_KEY);
   if (!raw) return;
   try {
-    const parsed = JSON.parse(raw) as LabMembership;
-    membership = {
-      ...EXPLORER_MEMBERSHIP,
-      ...parsed,
-      preparationTasks: parsed.preparationTasks ?? [],
-      dailyTasks: parsed.dailyTasks ?? [],
-    };
+    membership = normalizeMembership(JSON.parse(raw) as LabMembership);
   } catch {
     membership = { ...EXPLORER_MEMBERSHIP };
   }
+  syncLabCalendar();
   notify();
 }
 
@@ -102,12 +126,16 @@ export function requestStarterLab() {
     lifecycle: "requested",
     labId: "starter",
     labName: "Starter Lab",
-    requestedAt: formatDate(),
+    requestedAt: todayIso(),
     approvedAt: null,
     welcomeDismissed: false,
     startDate: null,
     day: null,
+    offMondayStartGranted: false,
+    programStartedOn: null,
+    activeDayKey: null,
     preparationTasks: cloneTasks(STARTER_PREP_TASKS),
+    prepChecklist: cloneChecklist(),
     dailyTasks: [],
     checkIn: null,
     progress: null,
@@ -116,20 +144,30 @@ export function requestStarterLab() {
 
 export function approveStarterLab() {
   if (membership.lifecycle !== "requested" && membership.lifecycle !== "explorer") return;
+  const approvedAt = todayIso();
   apply({
     ...membership,
     lifecycle: "approved_preparing",
     labId: "starter",
     labName: "Starter Lab",
-    requestedAt: membership.requestedAt ?? formatDate(),
-    approvedAt: formatDate(),
+    requestedAt: membership.requestedAt ?? approvedAt,
+    approvedAt,
     welcomeDismissed: false,
-    startDate: startDateLabel(),
+    startDate: cohortStartMonday(approvedAt),
     day: 0,
+    offMondayStartGranted: false,
+    programStartedOn: null,
+    activeDayKey: null,
     preparationTasks: cloneTasks(STARTER_PREP_TASKS),
+    prepChecklist: cloneChecklist(),
     dailyTasks: [],
-    progress: { day: 0, totalDays: 30, percent: 0 },
+    progress: { day: 0, totalDays: STARTER_TOTAL_DAYS, percent: 0 },
   });
+}
+
+export function grantOffMondayStart() {
+  if (membership.lifecycle !== "approved_preparing") return;
+  apply({ ...membership, offMondayStartGranted: true });
 }
 
 export function dismissPrepWelcome() {
@@ -155,17 +193,110 @@ export function completePrepTask(id: string) {
   });
 }
 
+/** Next unfinished step after this one, so Later / Save can walk the full prep flow. */
+export function nextPrepTaskId(currentId: string, snapshot = membership): string | null {
+  const tasks = snapshot.preparationTasks;
+  const index = tasks.findIndex((task) => task.id === currentId);
+  const after = (index >= 0 ? tasks.slice(index + 1) : tasks).find((task) => !task.complete);
+  return after?.id ?? null;
+}
+
+function toggleId(list: string[], id: string) {
+  return list.includes(id) ? list.filter((entry) => entry !== id) : [...list, id];
+}
+
+export function togglePrepGroceryItem(id: string) {
+  const checklist = cloneChecklist(membership.prepChecklist);
+  apply({
+    ...membership,
+    prepChecklist: {
+      ...checklist,
+      groceryChecked: toggleId(checklist.groceryChecked, id),
+    },
+  });
+}
+
+export function togglePrepSupplementItem(id: string) {
+  const checklist = cloneChecklist(membership.prepChecklist);
+  apply({
+    ...membership,
+    prepChecklist: {
+      ...checklist,
+      supplementChecked: toggleId(checklist.supplementChecked, id),
+    },
+  });
+}
+
+export function togglePrepPhoto(slot: string) {
+  const checklist = cloneChecklist(membership.prepChecklist);
+  apply({
+    ...membership,
+    prepChecklist: {
+      ...checklist,
+      photos: toggleId(checklist.photos, slot),
+    },
+  });
+}
+
+export function prepTaskStatus(task: LabPreparationTask, checklist = membership.prepChecklist) {
+  if (task.complete) return "Done";
+  if (task.id === "grocery" && checklist.groceryChecked.length > 0) return "In progress";
+  if (task.id === "supplements" && checklist.supplementChecked.length > 0) return "In progress";
+  if (task.id === "photos" && checklist.photos.length > 0) return "In progress";
+  return "Pending";
+}
+
+export function prepIsComplete(snapshot = membership) {
+  return snapshot.preparationTasks.length > 0 && snapshot.preparationTasks.every((task) => task.complete);
+}
+
+export function canStartStarterLab(snapshot = membership, today = todayIso()) {
+  return canStartLab({
+    prepComplete: prepIsComplete(snapshot),
+    startIso: snapshot.startDate,
+    todayIso: today,
+    offMondayGranted: snapshot.offMondayStartGranted,
+  });
+}
+
 export function startStarterLab() {
-  const done = membership.preparationTasks.every((task) => task.complete);
-  if (!done) return;
+  if (membership.lifecycle !== "approved_preparing") return;
+  syncLabCalendar();
+  if (!canStartStarterLab()) return;
+  const today = todayIso();
+  const plan = planForDay(1);
   apply({
     ...membership,
     lifecycle: "active",
     welcomeDismissed: true,
     day: 1,
-    dailyTasks: cloneTasks(STARTER_DAILY_TASKS),
-    progress: { day: 1, totalDays: 30, percent: 3 },
-    checkIn: { id: "day-1", date: formatDate(), submitted: false },
+    programStartedOn: today,
+    activeDayKey: today,
+    dailyTasks: cloneTasks(plan.dailyTasks),
+    progress: { day: 1, totalDays: STARTER_TOTAL_DAYS, percent: Math.round((1 / STARTER_TOTAL_DAYS) * 100) },
+    checkIn: { id: "day-1", date: today, submitted: false },
+  });
+}
+
+export function completeDailyTask(id: string) {
+  if (membership.lifecycle !== "active") return;
+  const dailyTasks = membership.dailyTasks.map((task) =>
+    task.id === id ? { ...task, complete: true } : task,
+  );
+  const done = dailyTasks.filter((task) => task.complete).length;
+  apply({
+    ...membership,
+    dailyTasks,
+    checkIn:
+      id === "checkin" && membership.checkIn
+        ? { ...membership.checkIn, submitted: true }
+        : membership.checkIn,
+    progress: membership.progress
+      ? {
+          ...membership.progress,
+          percent: Math.min(99, Math.round((done / Math.max(dailyTasks.length, 1)) * 100)),
+        }
+      : membership.progress,
   });
 }
 
@@ -187,14 +318,50 @@ export function completeStarterLab() {
   apply({
     ...membership,
     lifecycle: "completed",
-    day: 30,
-    progress: { day: 30, totalDays: 30, percent: 100 },
+    day: STARTER_TOTAL_DAYS,
+    progress: { day: STARTER_TOTAL_DAYS, totalDays: STARTER_TOTAL_DAYS, percent: 100 },
     dailyTasks: membership.dailyTasks.map((task) => ({ ...task, complete: true })),
   });
 }
 
 export function resetLabMembership() {
-  apply({ ...EXPLORER_MEMBERSHIP, preparationTasks: [], dailyTasks: [] });
+  apply({ ...EXPLORER_MEMBERSHIP, preparationTasks: [], prepChecklist: cloneChecklist(), dailyTasks: [] });
+}
+
+export function syncLabCalendar(now = new Date()) {
+  const today = isoDate(now);
+  if (membership.lifecycle === "approved_preparing" && membership.startDate && !membership.offMondayStartGranted) {
+    const rolled = rollMissedMonday(membership.startDate, today);
+    if (rolled !== membership.startDate) {
+      apply({ ...membership, startDate: rolled });
+    }
+    return;
+  }
+  if (membership.lifecycle !== "active" || !membership.programStartedOn) return;
+  const elapsed = programDayNumber(membership.programStartedOn, today, STARTER_TOTAL_DAYS + 1);
+  if (elapsed > STARTER_TOTAL_DAYS) {
+    completeStarterLab();
+    return;
+  }
+  if (membership.activeDayKey === today && membership.day === elapsed) return;
+  const plan = planForDay(elapsed);
+  apply({
+    ...membership,
+    day: elapsed,
+    activeDayKey: today,
+    dailyTasks: cloneTasks(plan.dailyTasks),
+    progress: {
+      day: elapsed,
+      totalDays: STARTER_TOTAL_DAYS,
+      percent: Math.round((elapsed / STARTER_TOTAL_DAYS) * 100),
+    },
+    checkIn: { id: `day-${elapsed}`, date: today, submitted: false },
+  });
+}
+
+export function todaysTrainId(snapshot = membership) {
+  const day = snapshot.day ?? 1;
+  return planForDay(day).trainId;
 }
 
 export function demoSetLifecycle(lifecycle: LabLifecycleState) {
@@ -207,6 +374,7 @@ export function demoSetLifecycle(lifecycle: LabLifecycleState) {
   apply({
     ...getLabMembership(),
     welcomeDismissed: true,
+    offMondayStartGranted: true,
     preparationTasks: STARTER_PREP_TASKS.map((task) => ({ ...task, complete: true })),
   });
   startStarterLab();
@@ -232,7 +400,7 @@ export function labStatusLabel(snapshot: LabMembership) {
     case "requested":
       return "Pending approval";
     case "approved_preparing":
-      return "Preparing";
+      return snapshot.offMondayStartGranted ? "Preparing · off-Monday allowed" : "Preparing";
     case "active":
       return "Active";
     case "completed":
@@ -240,4 +408,8 @@ export function labStatusLabel(snapshot: LabMembership) {
     default:
       return "Not in a Lab";
   }
+}
+
+export function startDateLabel(snapshot = membership) {
+  return displayStoredDate(snapshot.startDate);
 }
