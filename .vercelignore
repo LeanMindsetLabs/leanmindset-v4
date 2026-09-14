@@ -1,3 +1,4 @@
+dist
 .tmp-site-shots
 fastlane/screenshots
 fastlane/report.xml
